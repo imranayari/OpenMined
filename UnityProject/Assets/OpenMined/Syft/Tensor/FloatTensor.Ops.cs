@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace OpenMined.Syft.Tensor
 {
@@ -859,5 +860,61 @@ public void Zero_()
 				{ this.Data[i] = 0; }
 			});
 }
+
+public FloatTensor Squeeze(int dim = -1, bool inline = false)
+{
+	var list = new List<int>();
+
+	if (dim >= 0)
+	{
+		for (int i = 0; i < shape.Length; i++)
+		{
+			if (i != dim)
+			{
+				list.Add(shape[i]);
+			}
+			else
+			{
+				if (shape[i] != 1)
+				{
+					list.Add(shape[i]);
+				}
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < shape.Length; i++)
+		{
+			if(shape[i] > 1)
+			{
+				list.Add(shape[i]);
+			}
+		}
+	}
+
+	FloatTensor result = this;
+	if (list.Count == 0)
+	{
+		if (!inline)
+		{
+			result = new FloatTensor(_data: data, _shape: shape, _shader: shader);
+		}
+	}
+	else
+	{
+		if (inline)
+		{
+			View(list.ToArray(), inline: true);
+		}
+		else
+		{
+			result = View(list.ToArray());
+		}
+	}
+
+	return result;
+}
+
 }
 }

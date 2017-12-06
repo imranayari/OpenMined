@@ -4,6 +4,7 @@ using UnityEditor;
 using NUnit.Framework;
 
 using OpenMined.Syft.Tensor;
+using UnityEditor.VersionControl;
 
 namespace OpenMined.Tests
 {
@@ -1654,6 +1655,53 @@ public void Sinh_()
 		var rounded = Decimal.Round((Decimal)tensor.Data[i], 5);
 		Assert.AreEqual (expectedSinhTensor.Data[i], rounded);
 	}
+}
+
+[Test]
+public void Squeeze()
+{
+	float[] data1 = {1, 2, 3, 4};
+	int[] shape1 = {2, 1, 2, 1};
+
+	var tensor = new FloatTensor(_data: data1, _shape: shape1);
+
+	var newTensor = tensor.Squeeze();
+
+	Assert.AreEqual(2, newTensor.Shape[0]);
+	Assert.AreEqual(2, newTensor.Shape[1]);
+	Assert.AreEqual(2, newTensor.Shape.Length);
+
+	var anotherTensor = tensor.Squeeze(dim: 3);
+
+	Assert.AreEqual(2, anotherTensor.Shape[0]);
+	Assert.AreEqual(1, anotherTensor.Shape[1]);
+	Assert.AreEqual(3, anotherTensor.Shape.Length);
+}
+
+[Test]
+public void Squeeze_()
+{
+	float[] data1 = {1, 2, 3, 4};
+	int[] shape1 = {2, 1, 2, 1};
+
+	var tensor1 = new FloatTensor(_data: data1, _shape: shape1);
+
+	tensor1.Squeeze(inline: true);
+
+	Assert.AreEqual(2, tensor1.Shape[0]);
+	Assert.AreEqual(2, tensor1.Shape[1]);
+	Assert.AreEqual(2, tensor1.Shape.Length);
+
+	float[] data2 = {1, 2, 3, 4};
+	int[] shape2 = {2, 1, 2, 1};
+
+	var tensor2 = new FloatTensor(_data: data1, _shape: shape1);
+
+	var anotherTensor = tensor2.Squeeze(dim: 3, inline: true);
+
+	Assert.AreEqual(2, tensor2.Shape[0]);
+	Assert.AreEqual(1, tensor2.Shape[1]);
+	Assert.AreEqual(3, tensor2.Shape.Length);
 }
 
 [Test]

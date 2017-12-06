@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Remoting.Messaging;
+using NUnit.Framework.Constraints;
 using UnityEngine;
 using OpenMined.Network.Utils;
 using OpenMined.Network.Controllers;
@@ -656,6 +657,37 @@ public string ProcessMessage (Command msgObj, SyftController ctrl)
 	case "is_contiguous":
 	{
 		return Convert.ToString (IsContiguous ());
+	}
+	case "squeeze":
+	{
+		if (msgObj.tensorIndexParams.Length > 0)
+		{
+			int dim = int.Parse(msgObj.tensorIndexParams[0]);
+			var result = Squeeze(dim: dim);
+			ctrl.addTensor(result);
+			return result.Id.ToString();
+		}
+		else
+		{
+			var result = Squeeze();
+			ctrl.addTensor(result);
+			return result.Id.ToString();
+		}
+
+	}
+	case "sqeeze_":
+	{
+		if (msgObj.tensorIndexParams.Length > 0)
+		{
+			int dim = int.Parse(msgObj.tensorIndexParams[0]);
+			Squeeze(dim: dim, inline: true);
+			return Id.ToString();
+		}
+		else
+		{
+			Squeeze(inline: true);
+			return Id.ToString();
+		}
 	}
 	default:
 		break;
