@@ -76,150 +76,151 @@ public long[] Strides {
 	get { return strides; }
 }
 
-
-public FloatTensor (int[] _shape, ComputeShader _shader, bool _initOnGpu = false)
+		public FloatTensor (int[] _shape, float[] _data = null, ComputeBuffer _dataBuffer = null, ComputeBuffer _shapeBuffer = null, ComputeShader _shader = null, bool _copyData = true, bool _dataOnGpu=false)
 {
-	size = 1;
-	shape = (int[])_shape.Clone ();
-	strides = new long[_shape.Length];
+			// First: check that shape is valid.
+			if (_shape == null || _shape.Length == 0) {
+				throw new InvalidOperationException ("Tensor shape can't be an empty array.");
+			}	
 
-	if (SystemInfo.supportsComputeShaders) {
-		shader = _shader;
-		initShaderKernels ();
-	}
+			// Second: since shape is valid, let's save it
+			shape = (int[])_shape.Clone ();
 
-	for (var i = _shape.Length - 1; i >= 0; --i) {
-		strides [i] = size;
-		size *= _shape [i];
-	}
+			// Third: let's see what kind of data we've got. We should either have
+			// a GPU ComputeBuffer or a data[] object. 
+			if (_data != null && _shapeBuffer == null && _dataBuffer == null) {
+				
+				InitCpu (_data:_data,_copyData:_copyData);
 
-	if (_initOnGpu && SystemInfo.supportsComputeShaders) {
-		dataOnGpu = true;
-		dataBuffer = new ComputeBuffer (size, sizeof(float));
-		shapeBuffer = new ComputeBuffer (shape.Length, sizeof(int));
-	} else {
-		dataOnGpu = false;
-		data = new float[size];
-	}
+			} else if (_dataBuffer != null && _shapeBuffer != null && _data == null) {
+				
+				// looks like we have GPU data being passed in... initialize a GPU tensor.
 
-	id = System.Threading.Interlocked.Increment (ref nCreated);
+				InitGpu (_shader, _dataBuffer, _shapeBuffer, _copyData);
+
+
+			} else {
+
+				// no data seems to be passed in... or its got missing stuff
+
+				// if CPU works... go with that
+				if (_data != null) {
+					InitCpu (_data, _copyData);
+				} else if (_dataBuffer != null && _shader != null) {
+
+					if (SystemInfo.supportsComputeShaders) {
+
+						// seems i'm just missing a shape buffer - no biggie
+						shapeBuffer = new ComputeBuffer (shape.Length, sizeof(int));
+						shapeBuffer.SetData (shape);
+
+						InitGpu (_shader, _dataBuffer, _shapeBuffer, _copyData);
+
+					} else {
+						throw new InvalidOperationException ("You seem to be trying to create a GPU tensor without having access to a GPU...");
+					}
+
+				} else {
+
+					// nothing else seems to work - i suppose i'm just supposed to initialize an empty tensor.
+					long acc = 1;
+					for (var i = shape.Length - 1; i >= 0; --i) {
+						acc *= shape [i];
+					}
+
+					if(_dataOnGpu) {
+
+						_shapeBuffer = new ComputeBuffer (shape.Length, sizeof(int));
+						_shapeBuffer.SetData (shape);
+
+						_dataBuffer = new ComputeBuffer(size, sizeof(float));
+
+						InitGpu(_shader:_shader, _dataBuffer: _dataBuffer, _shapeBuffer:_shapeBuffer, _copyData:false);
+						this.Zero_();
+
+					} else {
+
+						_data = new float[acc];
+
+						InitCpu (_data, false);
+
+					}
+
+				}
+
+
+			}
+
+			// Lastly: let's set the ID of the tensor.
+			// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
+			id = System.Threading.Interlocked.Increment (ref nCreated);
+
 }
 
-public FloatTensor (float[] _data, int[] _shape)
-{
-	//TODO: Can contigous allocation might be a problem?
+		public void InitCpu(float[] _data, bool _copyData)  
+		{
+			// looks like we have CPU data being passed in... initialize a CPU tensor.
+			dataOnGpu = false;
 
-	if (_shape == null || _shape.Length == 0) {
-		throw new InvalidOperationException ("Tensor shape can't be an empty array.");
-	}
+			if (_copyData) {
+				data = (float[])_data.Clone ();
+			} else {
+				data = _data;
+			}
+				
+			size = _data.Length;
 
-	size = _data.Length;
-	shape = (int[])_shape.Clone ();
-	strides = new long[_shape.Length];
-	dataOnGpu = false;
+			setStridesAndCheckShape();
 
-	long acc = 1;
-	for (var i = _shape.Length - 1; i >= 0; --i) {
-		strides [i] = acc;
-		acc *= _shape [i];
-	}
-
-	if (acc != size)
-		throw new FormatException ("Tensor shape and data do not match.");
-
-	data = (float[])_data.Clone ();
-
-	// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
-	id = System.Threading.Interlocked.Increment (ref nCreated);
-}
-
-public FloatTensor (float[] _data, int[] _shape, ComputeShader _shader, bool _initOnGpu = false, bool _copyData = true)
-{
-	//TODO: Can contigous allocation might be a problem?
-
-	if (_shape == null || _shape.Length == 0) {
-		throw new InvalidOperationException ("Tensor shape can't be an empty array.");
-	}
-
-	size = _data.Length;
-	shape = (int[])_shape.Clone ();
-	strides = new long[_shape.Length];
-
-	if (SystemInfo.supportsComputeShaders) {
-		shader = _shader;
-		initShaderKernels ();
-	}
-
-	long acc = 1;
-	for (var i = _shape.Length - 1; i >= 0; --i) {
-		strides [i] = acc;
-		acc *= _shape [i];
-	}
-
-	if (acc != size)
-		throw new FormatException ("Tensor shape and data do not match.");
-
-	if (_initOnGpu && SystemInfo.supportsComputeShaders) {
-		dataOnGpu = true;
-
-		dataBuffer = new ComputeBuffer (size, sizeof(float));
-		dataBuffer.SetData (_data);
-
-		shapeBuffer = new ComputeBuffer (shape.Length, sizeof(int));
-		shapeBuffer.SetData (shape);
-	} else {
-		if (_copyData) {
-			data = (float[])_data.Clone ();
-		} else {
-			data = _data;
 		}
 
-	}
+		public void InitGpu(ComputeShader _shader, ComputeBuffer _dataBuffer, ComputeBuffer _shapeBuffer, bool _copyData) 
+		{
+			// First: we need to check that we have a shader
+			if (SystemInfo.supportsComputeShaders && _shader != null) {
+				shader = _shader;
+				initShaderKernels ();
+			} else {
+				throw new FormatException ("You tried to initialize a GPU tensor without access to a shader or gpu.");
+			}
 
-	// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
-	id = System.Threading.Interlocked.Increment (ref nCreated);
-}
+			// Second: let's save our buffer.
+			dataBuffer = _dataBuffer;
+			shapeBuffer = _shapeBuffer;
 
-public FloatTensor (ComputeBuffer _data, int[] _shape, int _size, ComputeShader _shader)
-{
-	//TODO: Can contigous allocation might be a problem?
+			if (_copyData) {
+				// TODO:
+				throw new FormatException ("Cannot copy data buffers yet");
+			}
 
-	if (_shape == null || _shape.Length == 0) {
-		throw new InvalidOperationException ("Tensor shape can't be an empty array.");
-	}
+			// Third: let's set the tensor's size to be equal to that of the buffer
+			size = _dataBuffer.count;
 
-	if (!SystemInfo.supportsComputeShaders) {
-		throw new NotSupportedException ("Shader operations are not supported on the host machine.");
-	}
+			// Fourth:
+			setStridesAndCheckShape();
 
-	dataOnGpu = true;
-	dataBuffer = _data;
+		}
 
-	size = _size;
-	shape = (int[])_shape.Clone ();
-	shapeBuffer = new ComputeBuffer (_shape.Length, sizeof(int));
-	strides = new long[_shape.Length];
+		public void setStridesAndCheckShape() {
+			// Third: let's initialize our strides.
+			strides = new long[shape.Length];
 
-	shader = _shader;
-	initShaderKernels ();
+			// Fifth: we should check that the buffer's size matches our shape.
+			long acc = 1;
+			for (var i = shape.Length - 1; i >= 0; --i) {
+				strides [i] = acc;
+				acc *= shape [i];
+			}
 
-	long acc = 1;
-	for (var i = _shape.Length - 1; i >= 0; --i) {
-		strides [i] = acc;
-		acc *= _shape [i];
-	}
+			// Sixth: let's check to see that our shape and data sizes match.
+			if (acc != size)
+				throw new FormatException ("Tensor shape and data do not match.");
+		}
 
-	if (acc != size)
-		throw new FormatException ("Tensor shape and data do not match.");
-
-
-	// IDEs might show a warning, but ref and volatile seems to be working with Interlocked API.
-	id = System.Threading.Interlocked.Increment (ref nCreated);
-}
 
 public FloatTensor Copy ()
 {
-	FloatTensor copy = new FloatTensor (this.data, this.shape, this.shader, this.dataOnGpu);
+	FloatTensor copy = new FloatTensor (_data:this.data, _shape:this.shape, _shader:this.shader);
 	return copy;
 }
 
