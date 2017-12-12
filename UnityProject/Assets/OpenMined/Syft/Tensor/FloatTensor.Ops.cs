@@ -907,6 +907,75 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
+		private FloatTensor expand(int[] sizes) {
+			FloatTensor result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader, _copyData: false);
+
+			for (int i = 0; i < shape.Length; i++) {
+				if (sizes[i] != -1 && sizes[i] != shape[i]) {
+					if (shape[i] == 1 || strides[i] == 0) {
+						result.strides[i] = 0;
+						result.shape[i] = sizes[i];
+					} else {
+						throw new InvalidOperationException (String.Format ("Cannot expand dimension {0}, not a singleton ({1})", i, shape[i]));
+					}
+				}
+			}
+
+			return result;
+		}
+
+		private FloatTensor expandNewDimensions(int[] sizes) {
+			FloatTensor result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader, _copyData: false);
+
+			int diffLength = sizes.Length - shape.Length;
+			
+			// sets new strides to zero on initialization
+			long[] newStrides = new long[sizes.Length];
+			int[] newShape = new int[sizes.Length];
+
+			for (int i = 0; i < diffLength; i++) {
+			    // sets new shape
+				if (sizes[i] != -1) {
+					newShape[i] = sizes[i];
+				} else {
+					throw new InvalidOperationException (String.Format ("Cannot set new dimension {0} to -1", i));
+				}
+			}
+			
+			for (int i = diffLength; i < sizes.Length; i++) {
+				var oldIndex = i - diffLength;
+				
+				// fill in old strides/shape
+				newStrides[i] = strides[oldIndex];
+				newShape[i] = shape[oldIndex];
+				
+				// modify any old strides/shapes
+				if (sizes[i] != -1 && sizes[i] != shape[oldIndex]) {
+					if (shape[oldIndex] == 1 || strides[oldIndex] == 0) {
+						newStrides[i] = 0;
+						newShape[i] = sizes[i];
+					} else {
+						throw new InvalidOperationException (String.Format ("Cannot expand dimension {0}, not a singleton ({1})", i, shape[i]));
+					}
+				}
+			}
+
+			result.shape = newShape;
+			result.strides = newStrides;
+			
+			return result;
+		}
+
+		public FloatTensor Expand(int[] sizes) {
+			if (sizes.Length == Shape.Length) {
+				return expand(sizes);
+			} else if (sizes.Length > Shape.Length) {
+				return expandNewDimensions(sizes);
+			} else {
+			    throw new InvalidOperationException(String.Format("Number of sizes provided must be greater than or equal to the number of dimensions in tensor"));
+			}
+		}
+
 /*** Reduce Functions ***/
 
         public FloatTensor Reduce(

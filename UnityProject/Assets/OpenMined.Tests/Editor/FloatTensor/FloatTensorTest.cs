@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using NUnit.Framework;
 using OpenMined.Network.Controllers;
+using UnityEngine;
 
 namespace OpenMined.Tests.Editor.FloatTensor
 {
@@ -868,6 +869,41 @@ namespace OpenMined.Tests.Editor.FloatTensor
 			{
 				Assert.AreEqual (Math.Round(expectedExpTensor.Data[i],3), Math.Round(tensor1.Data[i],3));
 			}
+		}
+
+		[Test]
+		public void Expand() {
+			float[] data = {1, 2, 3, 4};
+			int[] shape = {4, 1};
+			
+			var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+
+			int[] newShape = {4, 4};
+				
+			var expandedTensor = tensor.Expand(newShape);
+			
+			Assert.AreEqual(4, expandedTensor.Shape[0]);
+			Assert.AreEqual(4, expandedTensor.Shape[1]);
+			Assert.AreEqual(0, expandedTensor.Strides[1]);			
+		}
+
+		[Test]
+		public void ExpandNewDimension() {
+			float[] data = {1, 2, 3, 4};
+			int[] shape = {4, 1};
+			
+			var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+
+			int[] newShape = {4, 4, 4};
+
+			var expandedTensor = tensor.Expand(newShape);
+			
+			foreach (int s in expandedTensor.Shape) {
+				Assert.AreEqual(4, s);
+			}
+			
+			Assert.AreEqual(0, expandedTensor.Strides[0]);
+			Assert.AreEqual(0, expandedTensor.Strides[2]);
 		}
 
 		[Test]
