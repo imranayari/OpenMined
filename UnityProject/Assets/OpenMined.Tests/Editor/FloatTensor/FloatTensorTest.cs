@@ -2214,6 +2214,42 @@ namespace OpenMined.Tests.Editor.FloatTensor
 		}
 
 		[Test]
+		public void View() {
+			float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+			int[] shape = {4, 4};
+
+			var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+
+			int[] newShape = {2, 8};
+			
+			var newTensor = tensor.View(newShape);
+			
+			Assert.AreEqual(2, newTensor.Shape[0]);
+			Assert.AreEqual(8, newTensor.Shape[1]);
+			
+			Assert.AreEqual(8, newTensor.Strides[0]);
+			Assert.AreEqual(1, newTensor.Strides[1]);
+		}
+
+		[Test]
+		public void View_() {
+			float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+			int[] shape = {4, 4};
+
+			var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+
+			int[] newShape = {2, 8};
+			
+			tensor.View(newShape, inline: true);
+			
+			Assert.AreEqual(2, tensor.Shape[0]);
+			Assert.AreEqual(8, tensor.Shape[1]);
+			
+			Assert.AreEqual(8, tensor.Strides[0]);
+			Assert.AreEqual(1, tensor.Strides[1]);
+		}
+
+		[Test]
 		public void Zero_()
 		{
 			float[] data1 = { -1, 0, 1, float.MaxValue, float.MinValue };

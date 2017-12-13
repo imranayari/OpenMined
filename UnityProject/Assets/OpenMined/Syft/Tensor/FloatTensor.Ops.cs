@@ -816,21 +816,22 @@ namespace OpenMined.Syft.Tensor
                     shapeBuffer.Release();
                     shapeBuffer = new ComputeBuffer(shape.Length, sizeof(int));
                     shapeBuffer.SetData(shape);
+                    
+                    setStridesAndCheckShape();
                 }
                 else
                 {
-                    result = new FloatTensor(_ctrl: ctrl, _shape: new_shape, _shader: this.shader);
-                    result.Gpu(shader);
-                    CopyBuffer(dataBuffer, result.DataBuffer);
+                    result = new FloatTensor(_ctrl: ctrl, _shape: new_shape, _shader: this.shader, _copyData: false);
                 }
             }
             else if (inline)
             {
                 shape = new_shape;
+                setStridesAndCheckShape();
             }
             else
             {
-                result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: new_shape, _shader: shader);
+                result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: new_shape, _shader: shader, _copyData: false);
             }
             return result;
         }
@@ -850,7 +851,6 @@ namespace OpenMined.Syft.Tensor
 
             Array.Clear(data, 0, size);
         }
-
 
         public FloatTensor Squeeze(int dim = -1, bool inline = false)
         {
@@ -889,7 +889,7 @@ namespace OpenMined.Syft.Tensor
             {
                 if (!inline)
                 {
-                    result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader);
+                    result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader, _copyData: false);
                 }
             }
             else
