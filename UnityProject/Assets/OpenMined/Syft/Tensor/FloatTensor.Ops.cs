@@ -593,6 +593,13 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
+        public long Stride(int dim) {
+            return Strides[dim];
+        }
+
+        public long[] Stride() {
+            return Strides;
+        }
 
         public FloatTensor Sqrt()
         {

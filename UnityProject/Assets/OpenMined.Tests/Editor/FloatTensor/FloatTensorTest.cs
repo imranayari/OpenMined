@@ -1687,6 +1687,24 @@ namespace OpenMined.Tests.Editor.FloatTensor
 		}
 
 		[Test]
+		public void Stride() {
+			float[] data = {1, 2, 3, 4, 5, 6};
+			int[] shape = {1, 2, 3};
+			
+			var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+
+			var strides = tensor.Stride();
+			
+			Assert.AreEqual(6, strides[0]);
+			Assert.AreEqual(3, strides[1]);
+			Assert.AreEqual(1, strides[2]);
+
+			var stride = tensor.Stride(0);
+			
+			Assert.AreEqual(6, stride);
+		}
+
+		[Test]
 		public void SubtractElementwise()
 		{
 			float[] data1 = { float.MinValue, -10, -1.5f, 0, 1.5f, 10, 20, float.MaxValue };
