@@ -592,11 +592,11 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
-        public long Stride(int dim) {
+        public int Stride(int dim) {
             return Strides[dim];
         }
 
-        public long[] Stride() {
+        public int[] Stride() {
             return Strides;
         }
 

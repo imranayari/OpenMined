@@ -2313,7 +2313,7 @@ namespace OpenMined.Tests.Editor.FloatTensor
 			    float[] data = {1, 2, 3, 4, 5, 6};
 			    int[] shape = {1, 2, 3};
 			
-			    var tensor = new Syft.Tensor.FloatTensor(_ctrl: ctrl, _data: data, _shape: shape);
+			    var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
 
 			    var strides = tensor.Stride();
 			
