@@ -2308,19 +2308,19 @@ namespace OpenMined.Tests.Editor.FloatTensor
             }
         }
 
-		[Test]
-		public void Stride() {
-	        float[] data = {1, 2, 3, 4, 5, 6};
-		    int[] shape = {1, 2, 3};
-			
-		    var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+        [Test]
+        public void Stride() {
+            float[] data = {1, 2, 3, 4, 5, 6};
+            int[] shape = {1, 2, 3};
 
-			var strides = tensor.Strides;
-			
-		    Assert.AreEqual(6, strides[0]);
-		    Assert.AreEqual(3, strides[1]);
-	        Assert.AreEqual(1, strides[2]);
-		}
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+
+            var strides = tensor.Strides;
+
+            Assert.AreEqual(6, strides[0]);
+            Assert.AreEqual(3, strides[1]);
+            Assert.AreEqual(1, strides[2]);
+        }
 
         [Test]
         public void Zero_()
