@@ -592,14 +592,6 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
-        public int Stride(int dim) {
-            return Strides[dim];
-        }
-
-        public int[] Stride() {
-            return Strides;
-        }
-
         public FloatTensor Sqrt()
         {
             if (dataOnGpu)

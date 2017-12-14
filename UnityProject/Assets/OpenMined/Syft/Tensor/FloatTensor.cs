@@ -889,9 +889,9 @@ namespace OpenMined.Syft.Tensor
                 {
                     if (msgObj.tensorIndexParams.Length > 0) {
                         var dim = int.Parse(msgObj.tensorIndexParams[0]);
-                        return Stride(dim).ToString();
+                        return Strides[dim].ToString();
                     } else {
-                        return string.Join(" ", Stride());
+                        return string.Join(" ", Strides);
                     }
                     
                 }
