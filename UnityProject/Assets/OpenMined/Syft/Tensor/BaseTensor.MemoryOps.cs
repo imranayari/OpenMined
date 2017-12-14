@@ -27,6 +27,7 @@ namespace OpenMined.Syft.Tensor
         public bool Gpu(ComputeShader _shader)
         {
             if (dataOnGpu || !SystemInfo.supportsComputeShaders) return false;
+            shader = _shader;
             CopyCputoGpu();
             EraseCpu();
             return true;

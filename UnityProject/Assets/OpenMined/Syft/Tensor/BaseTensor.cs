@@ -8,9 +8,14 @@ namespace OpenMined.Syft.Tensor
 {
     public abstract partial class BaseTensor<T>
     {
+        #region Statics 
+
+        // Should we put a check incase this variable overflows?
         protected static volatile int nCreated = 0;
 
-        protected SyftController ctrl;
+        #endregion
+
+        #region Members
 
         protected T[] data;
         protected int id;
@@ -18,18 +23,57 @@ namespace OpenMined.Syft.Tensor
         protected int[] shape;
         protected int size;
 
+        protected ComputeShader shader;
 
-        public T[] Data => data;
+        protected SyftController controller;
 
-        public int[] Shape => shape;
+        #endregion
 
-        public int[] Strides => strides;
+        #region Properties
 
-        public int Size => size;
+        public SyftController Controller
+        {
+            get { return controller; }
+            set { controller = value; }
+        }
 
-        public int Id => id;
+        public T[] Data
+        {
+            get { return data; }
+            protected set { data = value; }
+        }
 
-        public static int CreatedObjectCount => nCreated;
+        public int[] Shape
+        {
+            get { return shape; }
+            protected set { shape = value; }
+        }
+
+        public int[] Strides
+        {
+            get { return strides; }
+            protected set { strides = value; }
+        }
+
+        public int Size
+        {
+            get { return size; }
+            protected set { size = value; }
+        }
+
+        public int Id
+        {
+            get { return id; }
+            protected set { id = value; }
+        }
+
+        public static int CreatedObjectCount
+        {
+            get { return nCreated; }
+            protected set { nCreated = value; }
+        }
+
+        #endregion
 
         public void InitCpu(T[] _data, bool _copyData)
         {
@@ -51,7 +95,16 @@ namespace OpenMined.Syft.Tensor
         {
             if (!SystemInfo.supportsComputeShaders)
                 throw new NotSupportedException("Shaders are not supported on the host machine");
-
+            
+            if (_shader != null)
+            {
+                shader = _shader;
+            }
+            else
+            {
+                throw new FormatException("You tried to initialize a GPU tensor without access to a shader or gpu.");
+            }
+            
             if (_copyData)
             {
                 var tempData = new T[_dataBuffer.count];
@@ -70,8 +123,12 @@ namespace OpenMined.Syft.Tensor
             size = _dataBuffer.count;
         }
 
-        protected int GetIndex(params int[] indices)
+        #region Operators
+
+        public int GetIndex(params int[] indices)
         {
+            if (indices.Length < shape.Length)
+                throw new NotSupportedException();
             var offset = 0;
             for (var i = 0; i < indices.Length; ++i)
             {
@@ -82,10 +139,10 @@ namespace OpenMined.Syft.Tensor
             return offset;
         }
 
-        protected long[] GetIndices(long index)
+        public int[] GetIndices(int index)
         {
             var idx = index;
-            var indices = new long[Shape.Length];
+            var indices = new int[Shape.Length];
             for (var i = 0; i < Shape.Length; ++i)
             {
                 indices[i] = (idx - (idx % (strides[i]))) / strides[i];
@@ -105,5 +162,7 @@ namespace OpenMined.Syft.Tensor
             get { return Data[index]; }
             set { Data[index] = value; }
         }
+
+        #endregion
     }
 }

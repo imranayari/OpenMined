@@ -17,8 +17,8 @@ namespace OpenMined.Tests.Editor.Model
     public class ModelTest
     {
         public SyftController ctrl;
-    
-        [TestFixtureSetUp]
+
+        [OneTimeSetUp]
         public void Init()
         {
             //Init runs once before running test cases.
@@ -58,10 +58,10 @@ namespace OpenMined.Tests.Editor.Model
                     weight?.Sub(weight.Grad.Transpose(), true);
                 }
 
-                currentLoss = loss.Data.Sum(); 
+                currentLoss = loss.Data.Sum();
             }
-            
+
             Assert.True(Math.Round(currentLoss, 5) <= 0.20936);
-        }   
+        }
     }
 }

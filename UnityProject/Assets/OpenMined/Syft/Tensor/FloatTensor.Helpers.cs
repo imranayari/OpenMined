@@ -10,7 +10,7 @@ namespace OpenMined.Syft.Tensor
             // Check if both tensors have same size
             if (tensor.Size != size)
             {
-                throw new InvalidOperationException("Tensors cannot be added since they have different sizes.");
+                throw new InvalidOperationException(String.Format("Tensors cannot be added since they have different sizes: {0} != {1}", tensor.Size, size));
             }
             // Check if both tensors have same number of dimensions
             if (tensor.Shape.Length != shape.Length)
@@ -32,22 +32,8 @@ namespace OpenMined.Syft.Tensor
                 }
             }
         }
-
-        private void SwapElements(ref int[] target, int index1, int index2)
-        {
-            int tmp = target[index1];
-            target[index1] = target[index2];
-            target[index2] = tmp;
-        }
-
-        private void SwapElements(ref long[] target, int index1, int index2)
-        {
-            long tmp = target[index1];
-            target[index1] = target[index2];
-            target[index2] = tmp;
-        }
-
-        private void AssertDim(long dim, long len)
+        
+        private void AssertDim(int dim, int len)
         {
             if (dim < 0 || dim >= len)
             {
@@ -55,27 +41,27 @@ namespace OpenMined.Syft.Tensor
             }
         }
 
-        private long GetDimReduceOffset(long index, long values, long stride)
+        private int GetDimReduceOffset(int index, int values, int stride)
         {
             return values * stride * (index / stride) + index % stride;
         }
 
         private void _dimForEach(
-            long interations,
-            long values,
-            long stride,
-            Action<float[], long, long> iterator
+            int interations,
+            int values,
+            int stride,
+            Action<float[], int, int> iterator
         )
         {
             MultiThread.For(interations, (i, len) =>
             {
-                float[] temp = new float[values];
+                var temp = new float[values];
 
-                long offset = GetDimReduceOffset(i, values, stride);
+                int offset = GetDimReduceOffset(i, values, stride);
 
-                for (long v = 0; v < values; v++)
+                for (int v = 0; v < values; v++)
                 {
-                    temp[v] = data[offset + v * stride];
+                    temp[v] = this[offset + v * stride];
                 }
 
                 iterator(temp, i, temp.Length);
@@ -86,19 +72,19 @@ namespace OpenMined.Syft.Tensor
     public static class MultiThread
     {
         // call func on multiple threads for the range [0..len)
-        public static void For(long len, Action<long, long> func)
+        public static void For(int len, Action<int, int> func)
         {
-            long nCPU = Environment.ProcessorCount;
+            int nCPU = Environment.ProcessorCount;
 
             // only use as many threads as needed (MAX array length)
             nCPU = Math.Min(nCPU, len);
 
             Parallel.For(0, nCPU, workerId =>
             {
-                long max = len * (workerId + 1) / nCPU;
-                long offset = len * workerId / nCPU;
+                int max = len * (workerId + 1) / nCPU;
+                int offset = len * workerId / nCPU;
 
-                for (long i = offset; i < max; i++)
+                for (int i = offset; i < max; i++)
                 {
                     func(i, len);
                 }
@@ -108,23 +94,17 @@ namespace OpenMined.Syft.Tensor
             });
         }
 
-        // proccess each item of and array on multiple threads
-        public static void ForEach<T>(T[] data, Action<T, long, long> func)
-        {
-            MultiThread.For(data.Length, (index, len) => func(data[index], index, len));
-        }
-
         // reduce items of array on multiple threads
-        public static T Reduce<T>(T[] data, Func<T, T, long, T[], T> func)
+        public static T Reduce<T>(T[] data, Func<T, T, int, T[], T> func)
         {
-            long len = data.Length;
-            long nCPU = Environment.ProcessorCount;
+            int len = data.Length;
+            int nCPU = Environment.ProcessorCount;
 
             // only use as many threads as needed (MAX array length / 2)
             // because reduce func proccesses two items at once
             nCPU = Math.Min(nCPU, len / 2);
 
-            T[] prev = data;
+            var prev = data;
 
             for (; nCPU > 0; nCPU = nCPU / 2)
             {
@@ -134,12 +114,12 @@ namespace OpenMined.Syft.Tensor
 
                 Parallel.For(0, nCPU, workerId =>
                 {
-                    long max = len * (workerId + 1) / nCPU;
-                    long offset = len * workerId / nCPU;
+                    var max = len * (workerId + 1) / nCPU;
+                    var offset = len * workerId / nCPU;
 
                     T acc = prev[offset];
 
-                    for (long i = offset + 1; i < max; i++)
+                    for (var i = offset + 1; i < max; i++)
                     {
                         acc = func(acc, prev[i], i, data);
                     }

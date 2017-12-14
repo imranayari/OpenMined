@@ -44,7 +44,7 @@ namespace OpenMined.Tests.Editor.NN.Functional
 
             for (var i = 0; i < softmax.Size; ++i)
             {
-                Assert.GreaterOrEqual(softmax.Data[i], 0);
+                Assert.GreaterOrEqual(softmax[i], 0);
             }
         }
 
@@ -56,7 +56,7 @@ namespace OpenMined.Tests.Editor.NN.Functional
             var tensor = new Syft.Tensor.FloatTensor(_ctrl, _data: data, _shape: shape);
             var softmax = Syft.NN.Functional.Softmax(tensor);
 
-            Assert.GreaterOrEqual(softmax.Data[0], 0.99f);
+            Assert.GreaterOrEqual(softmax[0], 0.99f);
         }
 
         [Test]
@@ -70,7 +70,7 @@ namespace OpenMined.Tests.Editor.NN.Functional
             float[] expected = {0.090f, 0.245f, 0.665f, 0.991f, 0.007f, 0.002f};
             for (var i = 0; i < expected.Length; ++i)
             {
-                Assert.AreEqual(expected[i], (float) Math.Round(softmax.Data[i], 3));
+                Assert.AreEqual(expected[i], softmax[i], 1e-3);
             }
         }
         
@@ -94,7 +94,7 @@ namespace OpenMined.Tests.Editor.NN.Functional
             float[] expected = {0.001f, 0.269f, 0.731f, 0.999f, 0.731f, 0.269f};
             for (var i = 0; i < expected.Length; ++i)
             {
-                Assert.AreEqual(expected[i], (float) Math.Round(softmax.Data[i], 3));
+                Assert.AreEqual(expected[i], softmax[i], 1e-3);
             }
         }    
     }

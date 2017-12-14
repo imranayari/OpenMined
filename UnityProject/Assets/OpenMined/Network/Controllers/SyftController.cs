@@ -54,7 +54,7 @@ namespace OpenMined.Network.Controllers
 
 		public int addTensor (FloatTensor tensor)
 		{
-			tensor.ctrl = this;
+			tensor.Controller = this;
 			tensors.Add (tensor.Id, tensor);
 			return (tensor.Id);
 		}
