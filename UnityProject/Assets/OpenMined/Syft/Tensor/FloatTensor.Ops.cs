@@ -17,163 +17,195 @@ namespace OpenMined.Syft.Tensor
             return Copy();
         }
 
-        public FloatTensor Abs(bool inline = false)
-// Returns a new Tensor with the smallest integer greater than or equal to each element
-        {
-            var result = inline ? this : this.emptyTensorCopy();
+		public FloatTensor Abs(bool inline = false)
+		// Returns a new Tensor with the smallest integer greater than or equal to each element
+		{
+			FloatTensor result = inline ? this : this.emptyTensorCopy();
 
-            if (dataOnGpu)
-            {
-                if (!inline) return AbsGPU(result);
-                AbsGPU_();
-                return this;
-            }
+			if (dataOnGpu) {
+				if (inline) { AbsGPU_ (); return this; }
+				else { return AbsGPU (result); }
+			}
+			else {
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        result.Data [i] = (float)(Math.Abs (Data [i]));
+					}
+				});
+			}
+			return result;
+		}
 
-            result.Data = data.AsParallel().Select(x => (float) Math.Abs((double) x)).ToArray();
-            return result;
-        }
+		public FloatTensor Add(FloatTensor x, bool inline = false)
+		{
+			// Check if both tensors are compatible for sum
+			SameSizeDimensionsShapeAndLocation(ref x);
 
-        public FloatTensor Add(FloatTensor x, bool inline = false)
-        {
-            // Check if both tensors are compatible for sum
-            SameSizeDimensionsShapeAndLocation(ref x);
+			FloatTensor result = inline ? this : this.emptyTensorCopy();
+			if (dataOnGpu & x.dataOnGpu) {
 
-            var result = inline ? this : this.emptyTensorCopy();
-            if (dataOnGpu & x.dataOnGpu)
-            {
-                if (inline)
-                {
-                    if (autograd)
-                        throw new InvalidOperationException(
-                            "Cannot call inline functions if you intend to run backprop.");
+				if (inline) {
+					if (autograd)
+						throw new InvalidOperationException ("Cannot call inline functions if you intend to run backprop.");
 
-                    AddElemGPU_(x);
-                    return this;
-                }
-                result = AddElemGPU(x, result);
-            }
-            else
-            {
-                result.Data = data.AsParallel().Zip(x.Data.AsParallel(), (a, b) => a + b).ToArray();
-            }
+					AddElemGPU_ (x);
+					return this;
+				} else {
+					result = AddElemGPU (x, result);
+				}
 
+			} else {
 
-            if (autograd)
-            {
-                HookAutograd(ref result, ref x, "add_elem");
-            }
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        result.Data [i] = x.Data [i] + Data [i];
+					}
+				});
+			}
 
 
-            return result;
-        }
+			if (autograd) {
+				HookAutograd (ref result, ref x, "add_elem");
+			}
 
 
-        public FloatTensor Acos(bool inline = false)
-        {
-            if (dataOnGpu)
-            {
-                if (!inline) return AcosGPU();
-                AcosGPU_();
-                return this;
-            }
-            var result = inline ? this : this.emptyTensorCopy();
-            result.Data = data.AsParallel().Select(x => (float) Math.Acos((double) x)).ToArray();
-            return result;
-        }
+			return result;
+		}
 
-        public FloatTensor Asin(bool inline = false)
-        {
-            if (dataOnGpu)
-            {
-                if (!inline) return AsinGPU();
-                AsinGPU_();
-                return this;
-            }
-            var result = inline ? this : this.emptyTensorCopy();
-            result.Data = data.AsParallel().Select(x => (float) Math.Asin((double) x)).ToArray();
-            return result;
-        }
 
-        public FloatTensor Atan(bool inline = false)
-        {
-            if (dataOnGpu)
-            {
-                if (!inline) return AtanGPU();
-                AtanGPU_();
-                return this;
-            }
-            var result = inline ? this : this.emptyTensorCopy();
-            result.Data = data.AsParallel().Select(x => (float) Math.Atan((double) x)).ToArray();
-            return result;
-        }
+		public FloatTensor Acos (bool inline = false)
+		{
+			if (dataOnGpu) {
+				if (inline) { AcosGPU_(); return this;}
+				else { return AcosGPU (); }
+			} else {
+				FloatTensor result = inline ? this : this.emptyTensorCopy();
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        var d = (double)Data [i];
+					        result.Data [i] = (float)System.Math.Acos (d);
+					}
+				});
+				return result;
+			}
+		}
 
-        public FloatTensor Add(float value, bool inline = false)
-        {
-            var result = inline ? this : this.emptyTensorCopy();
+		public FloatTensor Asin ( bool inline = false)
+		{
+			if (dataOnGpu) {
+				if (inline) { AsinGPU_(); return this;}
+				else { return AsinGPU (); }
+			} else {
+				var result = inline ? this : this.emptyTensorCopy();
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        var d = (double)Data [i];
+					        result.Data [i] = (float)System.Math.Asin (d);
+					}
+				});
 
-            if (dataOnGpu)
-            {
-                result.Gpu(shader);
-                if (!inline) return AddScalarGPU(value, result);
-                AddScalarGPU_(value);
-                return this;
-            }
-            result.Data = data.AsParallel().Select(x => x + value).ToArray();
-            return result;
-        }
+				return result;
+			}
+		}
 
-        public FloatTensor AddMatrixMultiply(FloatTensor tensor1, FloatTensor tensor2)
-        {
-            var gpu = dataOnGpu & tensor1.DataOnGpu & tensor2.DataOnGpu;
-            var cpu = !(dataOnGpu | tensor1.DataOnGpu | tensor2.DataOnGpu);
+		public FloatTensor Atan (bool inline = false)
+		{
+			if (dataOnGpu) {
+				if (inline) { AtanGPU_(); return this;}
+				else { return AtanGPU (); }
+			} else {
+				var result = inline ? this : this.emptyTensorCopy();
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        var d = (double)Data [i];
+					        result.Data [i] = (float)System.Math.Atan (d);
+					}
+				});
 
-            var res_shape = this.Shape;
-            var shape1 = tensor1.Shape;
-            var shape2 = tensor2.Shape;
+				return result;
+			}
+		}
 
-            if (shape1[1] != shape2[0])
-                throw new InvalidOperationException(String.Format("Matrix multiply not possible: {0} & {1}.", shape1[1],
-                    shape2[0]));
-            if (res_shape[0] != shape1[0])
-                throw new InvalidOperationException(String.Format("First dimension doesn't match: {0} vs {1}.",
-                    res_shape[0], shape1[0]));
-            if (res_shape[1] != shape2[1])
-                throw new InvalidOperationException(String.Format("Last dimension doesn't match: {0} vs {1}.",
-                    res_shape[res_shape.Length - 1], shape2[shape2.Length - 1]));
+		public FloatTensor Add(float value, bool inline = false)
+		{
+			FloatTensor result = inline ? this : this.emptyTensorCopy();
 
-            if (gpu)
-            {
-                AddMatrixMultiplyGPU(tensor1, tensor2);
-            }
-            else if (cpu)
-            {
-                var nCpu = SystemInfo.processorCount;
-                Parallel.For(0, nCpu, workerId =>
-                {
-                    var max = size * (workerId + 1) / nCpu;
-                    for (var idx = size * workerId / nCpu; idx < max; idx++)
-                    {
-                        var col = idx % res_shape[1];
-                        var row = (idx - col) / res_shape[1];
-                        var row_offset = row * shape1[1];
-                        for (var j = 0; j < shape1[1]; j++)
-                        {
-                            Data[idx] += tensor1.Data[j + row_offset] * tensor2.Data[j * shape2[1] + col];
-                        }
-                    }
-                });
-                return this;
-            }
-            else
-            {
-                Debug.Log("Data for all Tensors needs to be colocated on the same device. - CPU != GPU");
-            }
-            return this;
-        }
+			if (dataOnGpu) {
+				result.Gpu (shader);
+				if (inline) { AddScalarGPU_ (value); return this; }
+				else { return AddScalarGPU (value, result); }
+			}
+			else {
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For (0, nCpu, workerId => {
+					var max = size * (workerId + 1) / nCpu;
+					for (var i = size * workerId / nCpu; i < max; i++) {
+					        result.Data [i] = value + Data [i];
+					}
+				});
+			}
+			return result;
+		}
 
-        public FloatTensor Ceil(bool inline = false)
+		public FloatTensor AddMatrixMultiply(FloatTensor tensor1, FloatTensor tensor2)
+		{
+			bool gpu = dataOnGpu & tensor1.DataOnGpu & tensor2.DataOnGpu;
+			bool cpu = !(dataOnGpu | tensor1.DataOnGpu | tensor2.DataOnGpu);
 
-// Returns a new Tensor with the smallest integer greater than or equal to each element
+			int[] res_shape = this.Shape;
+			int[] shape1 = tensor1.Shape;
+			int[] shape2 = tensor2.Shape;
+
+			if (shape1[1] != shape2[0])
+				throw new InvalidOperationException(String.Format("Matrix multiply not possible: {0} & {1}.", shape1[1], shape2[0]));
+			if (res_shape[0] != shape1[0])
+				throw new InvalidOperationException(String.Format("First dimension doesn't match: {0} vs {1}.", res_shape[0], shape1[0]));
+			if (res_shape[1] != shape2[1])
+				throw new InvalidOperationException(String.Format("Last dimension doesn't match: {0} vs {1}.", res_shape[res_shape.Length - 1],shape2[shape2.Length - 1]));
+
+			if (gpu)
+			{
+				AddMatrixMultiplyGPU(tensor1, tensor2);
+			}
+			else if (cpu)
+			{
+				var nCpu = SystemInfo.processorCount;
+				Parallel.For(0, nCpu, workerId =>
+				{
+					var max = size * (workerId + 1) / nCpu;
+					for (var idx = size * workerId / nCpu; idx < max; idx++)
+					{
+					        int col = idx % res_shape[1];
+					        int row = (idx - col) / res_shape[1];
+					        int row_offset = row * shape1[1];
+					        for (var j = 0; j < shape1[1]; j++)
+					        {
+					                Data[idx] += tensor1.Data[j + row_offset] * tensor2.Data[j * shape2[1] + col];
+						}
+					}
+				});
+				return this;
+			}
+			else
+			{
+				Debug.Log("Data for all Tensors needs to be colocated on the same device. - CPU != GPU");
+			}
+			return this;
+		}
+
+		public FloatTensor Ceil(bool inline = false)
+
+        // Returns a new Tensor with the smallest integer greater than or equal to each element
         {
             var result = inline ? this : this.emptyTensorCopy();
 
@@ -280,7 +312,7 @@ namespace OpenMined.Syft.Tensor
                     {
                         for (var j = 0; j < ref_shape[0]; j++)
                         {
-                            Data[idx] += vector.Data[j] * matrix.Data[j + (idx * ref_shape[0])];
+                            this[idx] += vector[j] * matrix[j + (idx * ref_shape[0])];
                         }
                     }
                 });
@@ -336,13 +368,15 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
-        public FloatTensor Round()
+        public FloatTensor Round(bool inline = false)
         {
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: this.shader);
+            var result = inline ? this : this.emptyTensorCopy();
 
             if (dataOnGpu)
             {
-                return RoundGPU();
+            	if (!inline) return RoundGPU();
+                RoundGPU_();
+                return this;
             }
             result.Data = data.AsParallel().Select(x => (float) Math.Round(x)).ToArray();
             return result;
@@ -353,14 +387,15 @@ namespace OpenMined.Syft.Tensor
             return strides[strides.Length - 1] == 1L;
         }
 
-        public FloatTensor Log1p()
-        {
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: this.shader);
+        public FloatTensor Log1p(bool inline = false)
+        {	
+        	var result = inline ? this : this.emptyTensorCopy();
 
             if (dataOnGpu)
             {
-                // TODO: Create GPU implementation
-                throw new NotImplementedException();
+            	if (!inline) return Log1pGPU();
+            	Log1pGPU_();
+            	return this;
             }
             result.Data = data.AsParallel().Select(x => (float) (Math.Log(1 + x))).ToArray();
             return result;
@@ -378,7 +413,7 @@ namespace OpenMined.Syft.Tensor
             resultShape[0] = shape[0];
             resultShape[1] = x.shape[1];
 
-            var result = new FloatTensor(_ctrl: ctrl, _shape: resultShape);
+            var result = new FloatTensor(_controller: controller, _shape: resultShape);
 
             if (this.dataOnGpu)
             {
@@ -517,7 +552,7 @@ namespace OpenMined.Syft.Tensor
                 return this;
             }
 
-            result.Data = data.AsParallel().Select(x => x * (float) Math.Pow((double) x, value)).ToArray();
+            result.Data = data.AsParallel().Select(x => (float) Math.Pow((double) x, value)).ToArray();
             HookAutograd(ref result, value, "pow_scalar");
 
             return result;
@@ -546,7 +581,7 @@ namespace OpenMined.Syft.Tensor
                 return RsqrtGPU();
             }
 
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: this.shader);
+            var result = new FloatTensor(_controller: controller, _shape: shape, _shader: this.shader);
             result.Data = data.AsParallel().Select(x => 1 / (float) Math.Sqrt(x)).ToArray();
             return result;
         }
@@ -580,19 +615,21 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
-        public FloatTensor SizeTensor()
+        public FloatTensor ShapeTensor()
         {
             var data = new float[shape.Length];
-            var ndims = new int[shape.Length];
+            var ndims = new int[1];
+	        ndims[0] = shape.Length;
+	        
             for (var dim = 0; dim < shape.Length; dim++)
             {
                 data[dim] = shape[dim];
             }
 
-            var result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: ndims);
+            var result = new FloatTensor(_controller: controller, _data: data, _shape: ndims);
+
             return result;
         }
-
 
         public FloatTensor Sqrt()
         {
@@ -601,7 +638,7 @@ namespace OpenMined.Syft.Tensor
                 return SqrtGPU();
             }
 
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: shader);
+            var result = new FloatTensor(_controller: controller, _shape: shape, _shader: shader);
             result.Data = data.AsParallel().Select(x => (float) Math.Sqrt((double) x)).ToArray();
             return result;
         }
@@ -641,7 +678,7 @@ namespace OpenMined.Syft.Tensor
             {
                 return TanhGPU();
             }
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: this.shader);
+            var result = new FloatTensor(_controller: controller, _shape: shape, _shader: this.shader);
             result.Data = data.AsParallel().Select(x => (float) Math.Tanh((double) x)).ToArray();
             return result;
         }
@@ -660,7 +697,7 @@ namespace OpenMined.Syft.Tensor
             {
                 return TruncGPU();
             }
-            var result = new FloatTensor(_ctrl: ctrl, _shape: shape, _shader: this.shader);
+            var result = new FloatTensor(_controller: controller, _shape: shape, _shader: this.shader);
             result.Data = data.AsParallel().Select(x => (float) Math.Truncate((double) x)).ToArray();
             return result;
         }
@@ -683,7 +720,7 @@ namespace OpenMined.Syft.Tensor
             newShape[dimension1] = newShape[dimension2];
             newShape[dimension2] = tmpDim;
 
-            var result = new FloatTensor(_ctrl: ctrl, _shape: newShape, _shader: this.shader);
+            var result = new FloatTensor(_controller: controller, _shape: newShape, _shader: this.shader);
             var nCpu = SystemInfo.processorCount;
             Parallel.For(0, nCpu, workerId =>
             {
@@ -700,7 +737,6 @@ namespace OpenMined.Syft.Tensor
 
             return result;
         }
-
 
         public void Triu_(int k)
         {
@@ -725,7 +761,7 @@ namespace OpenMined.Syft.Tensor
                     var row = (i - col) / this.shape[1];
                     if (col < row + k)
                     {
-                        Data[i] = 0.0f;
+                        this[i] = 0.0f;
                     }
                 }
             });
@@ -752,7 +788,7 @@ namespace OpenMined.Syft.Tensor
             var stride = strides[0] + strides[1];
             return dataOnGpu
                 ? TraceGPU()
-                : Enumerable.Range(0, shape.Min()).AsParallel().Select(i => data[i * stride]).Sum();
+                : Enumerable.Range(0, shape.Min()).AsParallel().Select(i => this[i * stride]).Sum();
         }
 
         public FloatTensor Sigmoid(bool inline = false)
@@ -775,19 +811,18 @@ namespace OpenMined.Syft.Tensor
                 var max = size * (workerId + 1) / nCpu;
                 for (var i = size * workerId / nCpu; i < max; i++)
                 {
-                    if (this.Data[i] >= 0)
+                    if (this[i] >= 0)
                     {
-                        var s = Math.Exp(-(double) this.Data[i]);
-                        result.Data[i] = (float) (1 / (1.0f + s));
+                        var s = Math.Exp(-(double) this[i]);
+                        result[i] = (float) (1 / (1.0f + s));
                     }
                     else
                     {
-                        var s = Math.Exp((double) this.Data[i]);
-                        result.Data[i] = (float) (s / (1.0f + s));
+                        var s = Math.Exp((double) this[i]);
+                        result[i] = (float) (s / (1.0f + s));
                     }
                 }
             });
-
 
             if (autograd)
             {
@@ -819,7 +854,7 @@ namespace OpenMined.Syft.Tensor
                 }
                 else
                 {
-                    result = new FloatTensor(_ctrl: ctrl, _shape: new_shape, _shader: this.shader);
+                    result = new FloatTensor(_controller: controller, _shape: new_shape, _shader: this.shader);
                     result.Gpu(shader);
                     CopyBuffer(dataBuffer, result.DataBuffer);
                 }
@@ -830,8 +865,76 @@ namespace OpenMined.Syft.Tensor
             }
             else
             {
-                result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: new_shape, _shader: shader);
+                result = new FloatTensor(_controller: controller, _data: data, _shape: new_shape, _shader: shader);
             }
+            return result;
+        }
+
+        public FloatTensor Remainder(float divisor, bool inline = false)
+        {
+            if (inline & autograd)
+                throw new InvalidOperationException("Cannot call inline functions if you intend to run backprop.");
+            if (autograd)
+                throw new InvalidOperationException("Autograd not available for Remainder.");
+
+            var result = inline ? this : this.emptyTensorCopy();
+
+            if (dataOnGpu)
+            {
+                result.Gpu(shader);
+                if (inline) { RemainderScalarGPU_(divisor); return this; }
+                else { result = RemainderScalarGPU(result, divisor); }
+            }
+            else
+            {
+                var nCpu = SystemInfo.processorCount;
+                Parallel.For(0, nCpu, workerId => {
+                    var max = size * (workerId + 1) / nCpu;
+                    for (var i = size * workerId / nCpu; i < max; i++)
+                    {
+                        result[i] = this[i] % divisor;
+                    };
+                });
+            }
+
+            return result;
+        }
+
+        public FloatTensor Remainder(FloatTensor divisor, bool inline = false)
+        {
+            SameSizeDimensionsShapeAndLocation(ref divisor);
+            if (inline & autograd)
+                throw new InvalidOperationException("Cannot call inline functions if you intend to run backprop.");
+            if (autograd)
+                throw new InvalidOperationException("Autograd not available for Remainder.");
+
+            var result = inline ? this : this.emptyTensorCopy();
+
+            if (dataOnGpu)
+            {
+                result.Gpu(shader);
+                if (inline)
+                {
+                    RemainderElemGPU_(divisor);
+                    return this;
+                }
+                else
+                {
+                    result = RemainderElemGPU(divisor,result);
+                }
+            }
+            else
+            {
+                var nCpu = SystemInfo.processorCount;
+                Parallel.For(0, nCpu, workerId => {
+                    var max = size * (workerId + 1) / nCpu;
+                    for (var i = size * workerId / nCpu; i < max; i++)
+                    {
+                        result[i] = this[i] % divisor[i];
+                    };
+                });
+            }
+
             return result;
         }
 
@@ -889,7 +992,7 @@ namespace OpenMined.Syft.Tensor
             {
                 if (!inline)
                 {
-                    result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader);
+                    result = new FloatTensor(_controller: controller, _data: data, _shape: shape, _shader: shader);
                 }
             }
             else
@@ -908,7 +1011,7 @@ namespace OpenMined.Syft.Tensor
         }
 
 		private FloatTensor expand(int[] sizes) {
-			FloatTensor result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader, _copyData: false);
+			FloatTensor result = new FloatTensor(_controller: controller, _data: data, _shape: shape, _shader: shader, _copyData: false);
 
 			for (int i = 0; i < shape.Length; i++) {
 				if (sizes[i] != -1 && sizes[i] != shape[i]) {
@@ -925,12 +1028,12 @@ namespace OpenMined.Syft.Tensor
 		}
 
 		private FloatTensor expandNewDimensions(int[] sizes) {
-			FloatTensor result = new FloatTensor(_ctrl: ctrl, _data: data, _shape: shape, _shader: shader, _copyData: false);
+			FloatTensor result = new FloatTensor(_controller: controller, _data: data, _shape: shape, _shader: shader, _copyData: false);
 
 			int diffLength = sizes.Length - shape.Length;
 			
 			// sets new strides to zero on initialization
-			long[] newStrides = new long[sizes.Length];
+			int[] newStrides = new int[sizes.Length];
 			int[] newShape = new int[sizes.Length];
 
 			for (int i = 0; i < diffLength; i++) {
@@ -979,33 +1082,33 @@ namespace OpenMined.Syft.Tensor
 /*** Reduce Functions ***/
 
         public FloatTensor Reduce(
-            Func<float, float, long, float[], float> reducer,
-            Func<float, long, float> mapper
+            Func<float, float, int, float[], float> reducer,
+            Func<float, int, float> mapper
         )
         {
             int[] outDims = {1};
             var output = new float[1];
             output[0] = mapper(MultiThread.Reduce(data, reducer), Size);
 
-            return new FloatTensor(ctrl, outDims, output);
+            return new FloatTensor(controller, outDims, output);
         }
 
         internal void ForEach(
-            long dim,
-            Action<float[], long, long> iterator
+            int dim,
+            Action<float[], int, int> iterator
         )
         {
-            long interations = size / shape[dim];
-            long values = shape[dim];
+            int interations = size / shape[dim];
+            int values = shape[dim];
             var stride = strides[dim];
             MultiThread.For(interations, (i, len) =>
             {
                 var temp = new float[values];
                 var offset = GetDimReduceOffset(i, values, stride);
 
-                for (long v = 0; v < values; v++)
+                for (int v = 0; v < values; v++)
                 {
-                    temp[v] = data[offset + v * stride];
+                    temp[v] = this[offset + v * stride];
                 }
 
                 iterator(temp, offset, stride);
@@ -1013,13 +1116,13 @@ namespace OpenMined.Syft.Tensor
         }
 
         public FloatTensor Reduce(
-            long dim,
+            int dim,
             bool keepdim,
-            Func<float, float, long, float[], float> reducer,
-            Func<float, long, float> mapper
+            Func<float, float, int, float[], float> reducer,
+            Func<float, int, float> mapper
         )
         {
-            long len = shape.Length;
+            int len = shape.Length;
 
             if (dim < 0)
             {
@@ -1034,12 +1137,12 @@ namespace OpenMined.Syft.Tensor
             }
 
             var stride = strides[dim];
-            long values = shape[dim];
+            int values = shape[dim];
 
-            long outSize = 1;
+            int outSize = 1;
             var outDims = keepdim ? new int[len] : new int[len - 1];
 
-            for (long i = 0; i < len; i++)
+            for (int i = 0; i < len; i++)
             {
                 if (i < dim)
                 {
@@ -1068,7 +1171,7 @@ namespace OpenMined.Syft.Tensor
             {
                 var acc = vals[0];
 
-                for (long i = 1; i < length; i++)
+                for (int i = 1; i < length; i++)
                 {
                     acc = reducer(acc, vals[i], i, vals);
                 }
@@ -1076,34 +1179,34 @@ namespace OpenMined.Syft.Tensor
                 output[index] = mapper(acc, length);
             });
 
-            return new FloatTensor(ctrl, outDims, output);
+            return new FloatTensor(controller, outDims, output);
         }
 
-        public FloatTensor Min(long dim = -1, bool keepdim = false)
+        public FloatTensor Min(int dim = -1, bool keepdim = false)
         {
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc < val ? acc : val, (val, len) => val);
         }
 
-        public FloatTensor Max(long dim = -1, bool keepdim = false)
+        public FloatTensor Max(int dim = -1, bool keepdim = false)
         {
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc > val ? acc : val, (val, len) => val);
         }
 
-        public FloatTensor Sum(long dim = -1, bool keepdim = false)
+        public FloatTensor Sum(int dim = -1, bool keepdim = false)
         {
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc + val, (val, len) => val);
         }
 
-        public FloatTensor Prod(long dim = -1, bool keepdim = false)
+        public FloatTensor Prod(int dim = -1, bool keepdim = false)
         {
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc * val, (val, len) => val);
         }
 
-        public FloatTensor Mean(long dim = -1, bool keepdim = false)
+        public FloatTensor Mean(int dim = -1, bool keepdim = false)
         {
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc + val, (val, len) => val / (float) len);

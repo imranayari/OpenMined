@@ -181,16 +181,13 @@ void Ceil_ (uint3 id: SV_DispatchThreadID) {
 		CeilData_[id.x] = ceil(CeilData_[id.x]);
 }
 
-
 #pragma kernel CopyBuffer
 StructuredBuffer<float> buffer1;
 RWStructuredBuffer<float> buffer2;
 
 [numthreads(4,1,1)]
 
-void CopyBuffer (uint3 id : SV_DispatchThreadID)
-
-{
+void CopyBuffer (uint3 id : SV_DispatchThreadID) {
 	buffer2[id.x] = buffer1[id.x];
 }
 
@@ -335,6 +332,34 @@ void Round (uint3 id: SV_DispatchThreadID) {
 	RoundResult[id.x] = round(RoundData[id.x]);
 }
 
+#pragma kernel Round_
+
+RWStructuredBuffer<float> RoundData_;
+
+[numthreads(4,1,1)]
+void Round_ (uint3 id: SV_DispatchThreadID) {
+	RoundData_[id.x] = round(RoundData_[id.x]);
+}
+
+#pragma kernel Log1p
+
+RWStructuredBuffer<float> Log1pData;
+RWStructuredBuffer<float> Log1pResult;
+
+[numthreads(4,1,1)]
+void Log1p (uint3 id: SV_DispatchThreadID) {
+	Log1pResult[id.x] = log(1 + Log1pData[id.x]);
+}
+
+#pragma kernel Log1p_
+
+RWStructuredBuffer<float> Log1pData_;
+
+[numthreads(4,1,1)]
+void Log1p_ (uint3 id: SV_DispatchThreadID) {
+	Log1pData_[id.x] = log(1 + Log1pData_[id.x]);
+}
+
 #pragma kernel MulScalar_
 
 RWStructuredBuffer<float> MulScalarData_;
@@ -467,6 +492,48 @@ void Reduce1DSum (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThre
     {
 				Reduce1DSumResult[groupID.x] = sharedMem[0];
     }
+}
+
+#pragma kernel RemainderElem_
+
+RWStructuredBuffer<float> RemainderElemDataA_;
+RWStructuredBuffer<float> RemainderElemDataB_;
+
+[numthreads(4,1,1)]
+void RemainderElem_ (uint3 id: SV_DispatchThreadID) {
+	RemainderElemDataA_[id.x] = fmod(RemainderElemDataA_[id.x], RemainderElemDataB_[id.x]);
+}
+
+#pragma kernel RemainderElem
+
+RWStructuredBuffer<float> RemainderElemDataA;
+RWStructuredBuffer<float> RemainderElemDataB;
+RWStructuredBuffer<float> RemainderElemResult;
+
+[numthreads(4,1,1)]
+void RemainderElem (uint3 id: SV_DispatchThreadID) {
+	RemainderElemResult[id.x] = fmod(RemainderElemDataA[id.x], RemainderElemDataB[id.x]);
+}
+
+#pragma kernel RemainderScalar_
+
+RWStructuredBuffer<float> RemainderScalarData_;
+RWStructuredBuffer<float> RemainderScalarScalar_;
+
+[numthreads(4,1,1)]
+void RemainderScalar_ (uint3 id: SV_DispatchThreadID) {
+	RemainderScalarData_[id.x] = fmod(RemainderScalarData_[id.x], RemainderScalarScalar_[0]);
+}
+
+#pragma kernel RemainderScalar
+
+RWStructuredBuffer<float> RemainderScalarData;
+RWStructuredBuffer<float> RemainderScalarScalar;
+RWStructuredBuffer<float> RemainderScalarResult;
+
+[numthreads(4,1,1)]
+void RemainderScalar (uint3 id: SV_DispatchThreadID) {
+	RemainderScalarResult[id.x] = fmod(RemainderScalarData[id.x], RemainderScalarScalar[0]);
 }
 
 #pragma kernel Rsqrt

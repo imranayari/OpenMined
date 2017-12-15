@@ -10,6 +10,7 @@ namespace OpenMined.Syft.Layer.Loss
         {
             var diff = input.Sub(target);
             return diff.Pow(2);
+            // TODO: sum
         }
     }
 }

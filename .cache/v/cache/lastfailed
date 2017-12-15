@@ -1,0 +1,18 @@
+{
+  "integration/tests.py::test_addcdiv": true,
+  "integration/tests.py::test_addcdiv_": true,
+  "integration/tests.py::test_addcmul": true,
+  "integration/tests.py::test_addcmul_": true,
+  "integration/tests.py::test_clamp": true,
+  "integration/tests.py::test_clamp_": true,
+  "integration/tests.py::test_cosh_": true,
+  "integration/tests.py::test_erf": true,
+  "integration/tests.py::test_erf_": true,
+  "integration/tests.py::test_erfinv": true,
+  "integration/tests.py::test_erfinv_": true,
+  "integration/tests.py::test_fmod": true,
+  "integration/tests.py::test_fmod_": true,
+  "integration/tests.py::test_log1p": true,
+  "integration/tests.py::test_round": true,
+  "integration/tests.py::test_trace": true
+}

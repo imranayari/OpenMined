@@ -468,6 +468,48 @@ def test_exp_():
     np.testing.assert_almost_equal(expected, a.to_numpy(), decimal=4)
 
 
+def test_log1p():
+    data = np.array([1.2, -0.9, 9.9, 0.1, -0.455])
+    expected = np.array([0.78845736, -2.30258509,  2.38876279,  0.09531018, -0.60696948])
+    a = pytest.sc.FloatTensor(data)
+    b = a.log1p()
+
+    np.testing.assert_almost_equal(expected, b.to_numpy(), decimal=5)
+    # a doesn't change
+    np.testing.assert_array_equal(data, a.to_numpy())
+
+
+def test_log1p_():
+    data = np.array([1.2, -0.9, 9.9, 0.1, -0.455])
+    expected = np.array([0.78845736, -2.30258509,  2.38876279,  0.09531018, -0.60696948])
+    a = pytest.sc.FloatTensor(data)
+    a.log1p_()
+
+    # a does change when inlined
+    np.testing.assert_almost_equal(expected, a.to_numpy(), decimal=5)
+
+
+def test_round():
+    data = np.array([12.7292, -3.11, 9.00, 20.4999, 20.5001])
+    expected = np.array([13, -3, 9, 20, 21])
+    a = pytest.sc.FloatTensor(data)
+    b = a.round()
+
+    np.testing.assert_array_equal(expected, b.to_numpy())
+    # a doesn't change
+    np.testing.assert_array_equal(data, a.to_numpy())
+
+
+def test_round_():
+    data = np.array([12.7292, -3.11, 9.00, 20.4999, 20.5001])
+    expected = np.array([13, -3, 9, 20, 21])
+    a = pytest.sc.FloatTensor(data)
+    a.round_()
+
+    # a does change when inlined
+    np.testing.assert_array_equal(expected, a.to_numpy())
+
+
 def test_trace():
     data = np.random.randn(17, 17).astype('float')
     expected = data.trace()
@@ -482,20 +524,3 @@ def test_trace():
     np.testing.assert_almost_equal(actual, expected,
                                    decimal=decimal_accuracy, verbose=verbosity)
 
-def test_round():
-    data = np.array([12.7292, -3.11, 9.00, 20.4999, 20.5001])
-    expected = np.array(13, -3, 9, 20, 21)
-    a = pytest.sc.FloatTensor(data)
-    b = a.round()
-
-    np.testing.assert_array_equal(expected, b.to_numpy())
-    # a doesn't change
-    np.testing.assert_array_equal(data, a.to_numpy())
-
-def test_log1p():
-    data = np.array([1.2, -0.9, 9.9, 0.1, -0.455])
-    expected = np.array([0.78845736, -2.30258509,  2.38876279,  0.09531018, -0.60696948])
-    a = pytest.sc.FloatTensor(data)
-    b = a.log1p()
-
-    np.testing.assert_almost_equal(expected, b.to_numpy(), decimal=5)
