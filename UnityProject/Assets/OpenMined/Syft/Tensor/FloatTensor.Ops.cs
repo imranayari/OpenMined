@@ -40,6 +40,10 @@ namespace OpenMined.Syft.Tensor
 
 		public FloatTensor Add(FloatTensor x, bool inline = false)
 		{
+		    if (!IsContiguous() || !x.IsContiguous()) {
+		        throw new InvalidOperationException ("All tensors must be contiguous, call Contiguous() to convert");
+		    }
+
 			// Check if both tensors are compatible for sum
 			SameSizeDimensionsShapeAndLocation(ref x);
 
@@ -159,7 +163,11 @@ namespace OpenMined.Syft.Tensor
 
 		public FloatTensor AddMatrixMultiply(FloatTensor tensor1, FloatTensor tensor2)
 		{
-			bool gpu = dataOnGpu & tensor1.DataOnGpu & tensor2.DataOnGpu;
+		    if (!IsContiguous() || !tensor1.IsContiguous() || !tensor2.IsContiguous()) {
+		        throw new InvalidOperationException("All tensors must be contiguous, call Contiguous() to convert");
+		    }
+
+		    bool gpu = dataOnGpu & tensor1.DataOnGpu & tensor2.DataOnGpu;
 			bool cpu = !(dataOnGpu | tensor1.DataOnGpu | tensor2.DataOnGpu);
 
 			int[] res_shape = this.Shape;
@@ -250,6 +258,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Div(FloatTensor x, bool inline = false)
         {
+            if (!IsContiguous() || !x.IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             // Check if both tensors are compatible for sum
             SameSizeDimensionsShapeAndLocation(ref x);
 
@@ -281,6 +293,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor AddMatrixVectorProduct(FloatTensor matrix, FloatTensor vector)
         {
+            if (!IsContiguous() || !matrix.IsContiguous() || !vector.IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+            
             var gpu = dataOnGpu & matrix.DataOnGpu & vector.DataOnGpu;
             var cpu = !(dataOnGpu | matrix.DataOnGpu | vector.DataOnGpu);
 
@@ -384,6 +400,12 @@ namespace OpenMined.Syft.Tensor
 
         public bool IsContiguous()
         {
+            foreach (var stride in strides) {
+                if (stride == 0) {
+                    return false;
+                }
+            }
+            
             return strides[strides.Length - 1] == 1L;
         }
 
@@ -403,6 +425,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor MM(FloatTensor x)
         {
+            if (!IsContiguous() || !x.IsContiguous()) {
+                throw new InvalidOperationException ("All tensors must be contiguous, call Contiguous() to convert");
+            }
+
             if (this.shape.Length != 2 || x.shape.Length != 2)
             {
                 throw new InvalidOperationException(
@@ -432,6 +458,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Mul(FloatTensor x, bool inline = false)
         {
+            if (!IsContiguous() || !x.IsContiguous()) {
+                throw new InvalidOperationException ("All tensors must be contiguous, call Contiguous() to convert");
+            }
+
             // Check if both tensors are compatible for sum
             SameSizeDimensionsShapeAndLocation(ref x);
 
@@ -482,6 +512,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Sub(FloatTensor x, bool inline = false)
         {
+            if (!IsContiguous() || !x.IsContiguous()) {
+                throw new InvalidOperationException ("All tensors must be contiguous, call Contiguous() to convert");
+            }
+
             // Check if both tensors are compatible for sum
             SameSizeDimensionsShapeAndLocation(ref x);
 
@@ -514,6 +548,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Pow(FloatTensor x, bool inline = false)
         {
+            if (!IsContiguous() || !x.IsContiguous()) {
+                throw new InvalidOperationException ("All tensors must be contiguous, call Contiguous() to convert");
+            }
+
             // Check if both tensors are compatible for sum
             SameSizeDimensionsShapeAndLocation(ref x);
 
@@ -704,6 +742,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Transpose(int dimension1, int dimension2)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             //TODO: Should we create a new Tensor object here?
             if (dimension1 < 0 || dimension1 >= shape.Length)
                 throw new ArgumentOutOfRangeException("dimension1");
@@ -740,6 +782,10 @@ namespace OpenMined.Syft.Tensor
 
         public void Triu_(int k)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             if (shape.Length != 2)
             {
                 throw new InvalidOperationException(
@@ -834,6 +880,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor View(int[] new_shape, bool inline = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             var newSize = 1;
             for (var i = 0; i < new_shape.Length; i++)
             {
@@ -902,6 +952,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Remainder(FloatTensor divisor, bool inline = false)
         {
+            if (!IsContiguous() || !divisor.IsContiguous()) {
+                throw new InvalidOperationException ("All tensor must be contiguous, call Contiguous() to convert");
+            }
+
             SameSizeDimensionsShapeAndLocation(ref divisor);
             if (inline & autograd)
                 throw new InvalidOperationException("Cannot call inline functions if you intend to run backprop.");
@@ -945,6 +999,10 @@ namespace OpenMined.Syft.Tensor
 
         public void Zero_()
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             if (dataOnGpu)
             {
                 ZeroGPU_();
@@ -957,6 +1015,10 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Squeeze(int dim = -1, bool inline = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             var list = new List<int>();
 
             if (dim >= 0)
@@ -1115,30 +1177,50 @@ namespace OpenMined.Syft.Tensor
 
         public FloatTensor Min(int dim = -1, bool keepdim = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc < val ? acc : val, (val, len) => val);
         }
 
         public FloatTensor Max(int dim = -1, bool keepdim = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc > val ? acc : val, (val, len) => val);
         }
 
         public FloatTensor Sum(int dim = -1, bool keepdim = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc + val, (val, len) => val);
         }
 
         public FloatTensor Prod(int dim = -1, bool keepdim = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+            
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc * val, (val, len) => val);
         }
 
         public FloatTensor Mean(int dim = -1, bool keepdim = false)
         {
+            if (!IsContiguous()) {
+                throw new InvalidOperationException ("Tensor must be contiguous, call Contiguous() to convert");
+            }
+
             // TODO: Implement GPU op. with GPU tests.
             return Reduce(dim, keepdim, (acc, val, index, arr) => acc + val, (val, len) => val / (float) len);
         }
