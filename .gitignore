@@ -46,3 +46,6 @@ sysinfo.txt
 *.unitypackage
 
 integration/__pycache__
+
+# IDE
+.idea
