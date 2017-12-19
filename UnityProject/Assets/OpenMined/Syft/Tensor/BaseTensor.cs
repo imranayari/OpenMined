@@ -31,6 +31,12 @@ namespace OpenMined.Syft.Tensor
 
         #region Properties
 
+        public ComputeShader Shader
+        {
+            get { return shader; }
+            set { shader = value; }
+        }
+
         public SyftController Controller
         {
             get { return controller; }

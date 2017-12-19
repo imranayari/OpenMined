@@ -943,7 +943,7 @@ namespace OpenMined.Syft.Tensor
             //Debug.Log("Id:" + this.id + " Children:" + this.children.Count);
             if (result == null)
             {
-                if (this.children_indices.Count > 0)
+                if (autograd && this.children_indices.Count > 0)
                 {
                     autograd_pre_initialized = true;
                     result = controller.getTensor(this.children_indices[0]);

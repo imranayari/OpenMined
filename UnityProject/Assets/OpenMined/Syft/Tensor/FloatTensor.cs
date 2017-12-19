@@ -1,10 +1,8 @@
 using System;
-using System.Runtime.Remoting.Messaging;
-using NUnit.Framework.Constraints;
 using UnityEngine;
 using OpenMined.Network.Utils;
 using OpenMined.Network.Controllers;
-using System.Collections.Generic;
+using OpenMined.Syft.NN;
 
 namespace OpenMined.Syft.Tensor
 {
@@ -603,6 +601,16 @@ namespace OpenMined.Syft.Tensor
                 case "sigmoid":
                 {
                     var result = this.Sigmoid();
+                    return result.id + "";
+                }
+                case "softmax":
+                {
+                    var dim = -1;
+                    if (msgObj.tensorIndexParams.Length > 0)
+                    {
+                        dim = int.Parse(msgObj.tensorIndexParams[0]);
+                    }
+                    var result = Functional.Softmax(this, dim);
                     return result.id + "";
                 }
                 case "sub_elem":

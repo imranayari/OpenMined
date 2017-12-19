@@ -3,6 +3,7 @@ using System.Linq;
 using Nethereum.ABI.Decoders;
 using NUnit.Framework;
 using OpenMined.Network.Controllers;
+using OpenMined.Syft.NN;
 using UnityEngine;
 
 namespace OpenMined.Tests.Editor.FloatTensor
@@ -887,7 +888,8 @@ namespace OpenMined.Tests.Editor.FloatTensor
         }
 
         [Test]
-        public void Expand() {
+        public void Expand()
+        {
             float[] data = {1, 2, 3, 4};
             int[] shape = {4, 1};
 
@@ -903,7 +905,8 @@ namespace OpenMined.Tests.Editor.FloatTensor
         }
 
         [Test]
-        public void ExpandNewDimension() {
+        public void ExpandNewDimension()
+        {
             float[] data = {1, 2, 3, 4};
             int[] shape = {4, 1};
 
@@ -913,7 +916,8 @@ namespace OpenMined.Tests.Editor.FloatTensor
 
             var expandedTensor = tensor.Expand(newShape);
 
-            foreach (int s in expandedTensor.Shape) {
+            foreach (int s in expandedTensor.Shape)
+            {
                 Assert.AreEqual(4, s);
             }
 
@@ -1813,6 +1817,97 @@ namespace OpenMined.Tests.Editor.FloatTensor
         }*/
 
         [Test]
+        public void Softmax1D()
+        {
+            float[] data = {1, 2, 3, 4};
+            int[] shape = {4};
+
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+
+            var actualTensor = Functional.Softmax(tensor);
+
+            var expectedTensor = new float[]
+                {(float) 0.0320586, (float) 0.08714432, (float) 0.23688282, (float) 0.64391426};
+            for (var i = 0; i < expectedTensor.Length; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+        }
+
+        [Test]
+        public void Softmax2D()
+        {
+            float[] data = {1, 2, 3, 4};
+            int[] shape = {2, 2};
+
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+
+            var actualTensor = Functional.Softmax(tensor);
+
+            var expectedData = new float[] {(float) 0.2689, (float) 0.7311, (float) 0.2689, (float) 0.7311};
+            var expectedTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: expectedData, _shape: shape);
+            for (var i = 0; i < expectedTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+
+            actualTensor = Functional.Softmax(tensor, 0);
+
+            expectedData = new float[] {(float) 0.1192, (float) 0.1192, (float) 0.8808, (float) 0.8808};
+            expectedTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: expectedData, _shape: shape);
+            for (var i = 0; i < expectedTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+        }
+
+        [Test]
+        public void Softmax3D()
+        { 
+            float[] data = {1, 2, 3, 4, 5, 6, 7, 8};
+            int[] shape = {2, 2, 2};
+
+            float[] expectedData =
+            {
+                (float) 0.2689, (float) 0.7311, (float) 0.2689, (float) 0.7311,
+                (float) 0.2689, (float) 0.7311, (float) 0.2689, (float) 0.7311
+            };
+
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+            var actualTensor = Functional.Softmax(tensor);
+
+            var expectedTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: expectedData, _shape: shape);
+            for (var i = 0; i < expectedTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+
+            actualTensor = Functional.Softmax(tensor, 1);
+            expectedData = new float[]
+            {
+                (float) 0.1192, (float) 0.1192, (float) 0.8808, (float) 0.8808, (float) 0.1192, (float) 0.1192,
+                (float) 0.8808, (float) 0.8808
+            };
+            expectedTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: expectedData, _shape: shape);
+            for (var i = 0; i < expectedTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+            
+            actualTensor = Functional.Softmax(tensor, 0);
+            expectedData = new float[]
+            {
+                (float) 0.0180, (float) 0.0180, (float) 0.0180, (float) 0.0180, (float) 0.9820, (float) 0.9820,
+                (float) 0.9820, (float) 0.9820
+            };
+            expectedTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: expectedData, _shape: shape);
+            for (var i = 0; i < expectedTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+        }
+
+        [Test]
         public void Squeeze()
         {
             float[] data1 = {1, 2, 3, 4};
@@ -2405,45 +2500,48 @@ namespace OpenMined.Tests.Editor.FloatTensor
                 Assert.AreEqual(expectedTensor[i], truncatedTensor[i]);
             }
         }
-        
-		    [Test]
-		    public void View() {
-          float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-          int[] shape = {4, 4};
 
-          var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+        [Test]
+        public void View()
+        {
+            float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+            int[] shape = {4, 4};
 
-          int[] newShape = {2, 8};
-          
-          var newTensor = tensor.View(newShape);
-          
-          Assert.AreEqual(2, newTensor.Shape[0]);
-          Assert.AreEqual(8, newTensor.Shape[1]);
-          
-          Assert.AreEqual(8, newTensor.Strides[0]);
-          Assert.AreEqual(1, newTensor.Strides[1]);
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+
+            int[] newShape = {2, 8};
+
+            var newTensor = tensor.View(newShape);
+
+            Assert.AreEqual(2, newTensor.Shape[0]);
+            Assert.AreEqual(8, newTensor.Shape[1]);
+
+            Assert.AreEqual(8, newTensor.Strides[0]);
+            Assert.AreEqual(1, newTensor.Strides[1]);
         }
 
         [Test]
-        public void View_() {
-          float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-          int[] shape = {4, 4};
+        public void View_()
+        {
+            float[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+            int[] shape = {4, 4};
 
-          var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
 
-          int[] newShape = {2, 8};
-          
-          tensor.View(newShape, inline: true);
-          
-          Assert.AreEqual(2, tensor.Shape[0]);
-          Assert.AreEqual(8, tensor.Shape[1]);
-          
-          Assert.AreEqual(8, tensor.Strides[0]);
-          Assert.AreEqual(1, tensor.Strides[1]);
+            int[] newShape = {2, 8};
+
+            tensor.View(newShape, inline: true);
+
+            Assert.AreEqual(2, tensor.Shape[0]);
+            Assert.AreEqual(8, tensor.Shape[1]);
+
+            Assert.AreEqual(8, tensor.Strides[0]);
+            Assert.AreEqual(1, tensor.Strides[1]);
         }
 
         [Test]
-        public void Stride() {
+        public void Stride()
+        {
             float[] data = {1, 2, 3, 4, 5, 6};
             int[] shape = {1, 2, 3};
 
