@@ -400,13 +400,20 @@ namespace OpenMined.Syft.Tensor
 
         public bool IsContiguous()
         {
-            foreach (var stride in strides) {
-                if (stride == 0) {
-                    return false;
+            long z = 1;
+            int d;
+            for(d = shape.Length-1; d >= 0; d--)
+            {
+                if(shape[d] != 1)
+                {
+                    if (strides[d] == z) {
+                        z *= shape[d];
+                    } else {
+                        return false;
+                    }
                 }
             }
-            
-            return strides[strides.Length - 1] == 1L;
+            return true;
         }
 
         public FloatTensor Log1p(bool inline = false)

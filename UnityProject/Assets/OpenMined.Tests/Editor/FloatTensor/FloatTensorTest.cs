@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Nethereum.ABI.Decoders;
 using NUnit.Framework;
 using OpenMined.Network.Controllers;
 using UnityEngine;
@@ -980,14 +981,18 @@ namespace OpenMined.Tests.Editor.FloatTensor
                 Assert.AreEqual(i, tensor.GetIndices(tensor.GetIndex(i)));
         }
 
+        [Test]
         public void IsContiguous()
         {
-            float[] data = new float[] {1, 2, 3, 4, 5, 6};
-            int[] shape = new int[] {2, 3};
+            float[] data = new float[] {1, 2, 3, 4};
+            int[] shape = new int[] {4, 1};
             var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape);
             Assert.AreEqual(tensor.IsContiguous(), true);
-            var transposedTensor = tensor.Transpose();
-            Assert.AreEqual(transposedTensor.IsContiguous(), false);
+
+            var newShape = new int[] {4, 4};
+
+            var expandedTensor = tensor.Expand(newShape);
+            Assert.AreEqual(expandedTensor.IsContiguous(), false);
         }
 
         [Test]
