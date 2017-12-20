@@ -5,105 +5,10 @@ namespace OpenMined.Syft.Tensor
 {
     public partial class FloatTensor
     {
-        private bool autograd;
-        public FloatTensor Grad { get; private set; }
-
-        private bool keepgrads;
-
-        private List<int> creators;
-        private string creation_op;
-        private List<int> children_indices; // children -> counts
-	    private List<int> children_counts; // children -> counts
-	    private int sibling;
-
-        public void InitAutograd()
-        {
-//			if(!autograd) {
-            autograd = true;
-            creators = new List<int>();
-	        children_indices = new List<int>();
-	        children_counts = new List<int>();
-	        
-//			}
-        }
-
-	    public void ResetAutogradCounts()
-	    {
-		    for (int i = 0; i < children_counts.Count; i++)
-		    {
-			    children_counts[i] = 0;
-		    }
-		    
-	    }
-
-        public bool AllChildrenGradsAccountedFor()
-        {
-            foreach (var item in children_counts)
-            {
-                if (item == 0)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-
-        // hook autograd two parents - one scalar
-        public void HookAutograd(ref FloatTensor result, float x, string creation_op)
-        {
-            if (autograd)
-            {
-                FloatTensor new_child =
-                    new FloatTensor(_controller: controller, _shape: new int[] {1}, _data: new float[] {x});
-
-                result.InitAutograd();
-                result.creators.Add(this.id);
-                result.creators.Add(new_child.id);
-                result.creation_op = creation_op;
-		        
-                children_indices.Add(result.Id);
-	            children_counts.Add(0);
-//				new_child.children.Add (result.Id, 0);
-			}
-
-		}
-
-		// hook autograd two parents
-		public void HookAutograd(ref FloatTensor result, ref FloatTensor x, string creation_op) {
-
-			if (autograd) {
-
-				result.InitAutograd ();
-				result.creators.Add (this.id);
-				result.creators.Add (x.id);
-				result.creation_op = creation_op;
-
-				children_indices.Add(result.Id);
-				children_counts.Add(0);
-				
-				x.children_indices.Add(result.Id);
-				x.children_counts.Add(0);
-				
-				this.sibling = x.id;
-			}
-
-		}
-
-		// hook autograd single parent
-		public void HookAutograd(ref FloatTensor result, string creation_op) {
-
-			if (autograd) {
-
-				result.InitAutograd ();
-				result.creators.Add (this.id);
-				result.creation_op = creation_op;
-
-				children_indices.Add(result.Id);
-				children_counts.Add(0);
-			}
-		}
-
+	    private bool autograd;
+	    public FloatTensor Grad { get; private set; }
+	    private bool keepgrads;
+	    
 	    public void Backward(FloatTensor grad = null, FloatTensor grad_origin = null)
 	    {
 
