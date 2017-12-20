@@ -45,7 +45,7 @@ namespace OpenMined.Syft.Tensor
         }
 
 
-        // hook autograd two parents - one scalar
+        // hook autograd one parents - one scalar
         public FloatTensor HookAutograd(ref FloatTensor result, float x, string creation_op, bool inline)
         {
 
@@ -56,7 +56,7 @@ namespace OpenMined.Syft.Tensor
             
 	        if (result == null)
 	        {
-		        if (this.children_indices.Count > 0)
+		        if (autograd && this.children_indices.Count > 0)
 		        {
 			        autograd_pre_initialized = true;
 			        result = controller.getTensor(this.children_indices[0]);

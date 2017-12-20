@@ -693,13 +693,15 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
-        public FloatTensor Tanh(bool inline = false)
+        public FloatTensor Tanh(bool inline = false, FloatTensor result = null)
         {
             if (dataOnGpu)
             {
                 return TanhGPU();
             }
-            var result = new FloatTensor(_controller: controller, _shape: shape, _shader: this.shader);
+
+            result = HookAutograd(ref result, "tanh", inline);
+
             result.Data = data.AsParallel().Select(x => (float) Math.Tanh((double) x)).ToArray();
             return result;
         }

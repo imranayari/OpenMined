@@ -104,10 +104,21 @@ namespace OpenMined.Syft.Tensor
 					    controller.getTensor(creators[0]).Backward(self_nograd.Mul(grad).Mul(controller.getTensor(creators[1]).Data[0]), this);
 
 				    }
+                    else if (creation_op == "tanh")
+                    {
+                        FloatTensor c = this.Copy();
+                        c.autograd = false;
 
+                        foreach(var da in c.Data){
+                            Console.WriteLine(da);
+                        }
 
+                        var output = c.Pow(2).Neg().Add(1f).Mul(grad);
+
+                        controller.getTensor(creators[0]).Backward(output, this);
+                    }
 			    }
-		    }
+            }
 	    }
     }
 }
