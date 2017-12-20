@@ -1243,6 +1243,27 @@ namespace OpenMined.Syft.Tensor
 			}
 		}
 
+        public FloatTensor Softmax2D() {
+            if (shape.Length > 2) {
+                throw new InvalidOperationException("Must be only 2 dimensional shape");
+            }
+
+            var expSums = Sum(1);
+            var result = emptyTensorCopy();
+            for (var i = 0; i < shape[0]; i++) {
+                for (var j = 0; j < shape[1]; j++) {
+                    result[i, j] = this[i, j] / expSums[i];
+                }
+            }
+
+            if (autograd)
+            {
+                HookAutograd(ref result, "softmax");
+            }
+
+            return result;
+        }
+
 /*** Reduce Functions ***/
 
         public FloatTensor Reduce(

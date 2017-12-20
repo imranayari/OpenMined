@@ -31,7 +31,7 @@ namespace OpenMined.Syft.NN
             var lenX = 1 * (input.Shape.Sum() - lenY);
             var viewShape = new int[] {lenX, lenY};
             var transposedShape = (int[]) input.Shape.Clone();
-            
+
             var copy = input;
             if (dim != -1 && dim < (input.Shape.Length - 1))
             {
