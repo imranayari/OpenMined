@@ -540,6 +540,11 @@ namespace OpenMined.Syft.Tensor
                     this.Pow(float.Parse(msgObj.tensorIndexParams[0]), inline: true);
                     return this.id + "";
                 }
+                case "reciprocal":
+                {
+                    var result = Reciprocal();
+                    return result.Id.ToString();
+                }
                 case "remainder_elem":
                 {
 	                var divisor = ctrl.getTensor(int.Parse(msgObj.tensorIndexParams[0]));

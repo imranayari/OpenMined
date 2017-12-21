@@ -1463,6 +1463,25 @@ namespace OpenMined.Tests.Editor.FloatTensor
         }
 
         [Test]
+        public void Reciprocal()
+        {
+            float[] data1 = {1f, 2f, 3f, 4f};
+            int[] shape1 = {4};
+            var tensor1 = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data1, _shape: shape1);
+
+            float[] data2 = {1f, 0.5f, 0.33333333f, 0.25f};
+            int[] shape2 = {4};
+            var expectedReciprocalTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data2, _shape: shape2);
+
+            var actualReciprocalTensor = tensor1.Reciprocal();
+
+            for (int i = 0; i < actualReciprocalTensor.Size; i++)
+            {
+                Assert.AreEqual(expectedReciprocalTensor[i], actualReciprocalTensor[i], 1e-3);
+            }
+        }
+
+        [Test]
         public void RemainderElem()
         {
             float[] data = {-10, -5, -3.5f, 4.5f, 10, 20};
@@ -1831,6 +1850,34 @@ namespace OpenMined.Tests.Editor.FloatTensor
             for (var i = 0; i < expectedTensor.Length; i++)
             {
                 Assert.AreEqual(expectedTensor[i], actualTensor[i], 1e-3);
+            }
+        }
+        
+        [Test]
+        public void Softmax1DAutoGrad()
+        {
+            float[] data = {(float)1, (float)0.7, (float)0.5, (float)0.3};
+            float[] gradData = {1, 0, 0, 0};
+            int[] shape = {4};
+
+            var tensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: data, _shape: shape, _autograd:true);
+            var gradTensor = new Syft.Tensor.FloatTensor(_controller: ctrl, _data: gradData, _shape: shape);
+
+            var outputTensor = Functional.Softmax(tensor);
+            
+            var gradInput = Functional.SoftmaxGradient(outputTensor, gradTensor, 0);
+
+            var expectedTensor = new float[]
+                {(float) 0.2280, (float) -0.0916, (float) -0.0750, (float) -0.0614};
+            for (var i = 0; i < expectedTensor.Length; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], gradInput[i], 1e-3);
+            }
+            
+            outputTensor.Backward(gradTensor, null);
+            for (var i = 0; i < expectedTensor.Length; i++)
+            {
+                Assert.AreEqual(expectedTensor[i], tensor.Grad[i], 1e-3);
             }
         }
 

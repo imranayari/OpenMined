@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using OpenMined.Syft.Tensor;
+using UnityEngine;
 
 namespace OpenMined.Syft.NN
 {
@@ -11,6 +13,9 @@ namespace OpenMined.Syft.NN
         // TODO: Improve the implementation!!!
         public static FloatTensor Softmax(FloatTensor input, int dim = -1)
         {
+            if (!input.IsContiguous())
+                throw new NotImplementedException(
+                    "Softmax Gradient does not support non-contiguous tensors at the moment!");
    
             //TODO: GPU support
             var gpu = false;
@@ -35,31 +40,84 @@ namespace OpenMined.Syft.NN
             var dimStride = innerSize;
             var outerStride = dimSize * dimStride;
             
-            var result = input.Exp();
-
-            for (var i = 0; i < outerSize * innerSize; i++)
+            var output= input.Exp();
+            
+            var nCpu = SystemInfo.processorCount;
+            Parallel.For(0, nCpu, workerId =>
             {
-                int outerIdx = i / innerSize;
-                int innerIdx = i % innerSize;
-                
-                // works for contiguous!!
-                var inputData = outerIdx * outerStride + innerIdx;
-                
-                float sum = 0;
-                for (var d = 0; d < dimSize; d++)
-                    sum += result.Data[inputData + d * dimStride];
-                
-                for (var d = 0; d < dimSize; d++)
-                    result.Data[inputData + d * dimStride] = result.Data[inputData + d * dimStride] / sum;
-            }
+                var max = (outerSize * innerSize) * (workerId + 1) / nCpu;
+                for (var i = (outerSize * innerSize) * workerId / nCpu; i < max; i++)
+                {
+                    int outerIdx = i / innerSize;
+                    int innerIdx = i % innerSize;
 
+                    // works for contiguous!!
+                    var index = outerIdx * outerStride + innerIdx;
+
+                    float sum = 0;
+                    for (var d = 0; d < dimSize; d++)
+                        sum += output.Data[index + d * dimStride];
+
+                    for (var d = 0; d < dimSize; d++)
+                        output.Data[index + d * dimStride] = output.Data[index + d * dimStride] / sum;
+                }
+            });
 
             if (gpu)
             {
-                result.Gpu(input.Shader);
+                output.Gpu(input.Shader);
             }
+            
+            output = input.HookAutograd(ref output, "softmax-"+ _dim.ToString(), false);
 
-            return result;
+            return output;
         }
+
+        public static FloatTensor SoftmaxGradient(FloatTensor output, FloatTensor gradOutput, int dim)
+        {
+            if (!output.IsContiguous() || !gradOutput.IsContiguous())
+                throw new NotImplementedException(
+                    "Softmax Gradient does not support non-contiguous tensors at the moment!");
+            var outerSize = 1;
+            var innerSize = 1;
+            var dimSize = output.Shape[dim];
+            
+            for (var i = 0; i < dim; ++i)
+                outerSize *= output.Shape[i];
+            
+            for (var i = dim + 1; i < output.Shape.Length; ++i)
+                innerSize *= output.Shape[i];
+            
+            var dimStride = innerSize;
+            var outerStride = dimSize * dimStride;
+            
+            var gradInput = output.emptyTensorCopy();
+
+            var nCpu = SystemInfo.processorCount;
+            Parallel.For(0, nCpu, workerId =>
+            {
+                var max = (outerSize * innerSize) * (workerId + 1) / nCpu;
+                for (var i = (outerSize * innerSize) * workerId / nCpu; i < max; i++)
+                {
+                    int outerIdx = i / innerSize;
+                    int innerIdx = i % innerSize;
+
+                    // works for contiguous!!
+                    var index = outerIdx * outerStride + innerIdx;
+
+                    float sum = 0;
+                    for (var d = 0; d < dimSize; d++)
+                        sum += output.Data[index + d * dimStride] * gradOutput.Data[index + d * dimStride];
+
+                    for (var d = 0; d < dimSize; d++)
+                        gradInput.Data[index + d * dimStride] = output.Data[index + d * dimStride] * (gradOutput.Data[index + d * dimStride] - sum);
+                }
+            });
+
+            gradInput.Autograd = false;
+
+            return gradInput;
+        }
+        
     }
 }

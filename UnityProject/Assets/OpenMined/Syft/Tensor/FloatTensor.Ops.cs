@@ -590,6 +590,21 @@ namespace OpenMined.Syft.Tensor
             return result;
         }
 
+        public FloatTensor Reciprocal(bool inline = false)
+        {
+            var result = inline ? this : this.emptyTensorCopy();
+
+            if (dataOnGpu)
+            {
+                if (!inline) return ReciprocalGPU();
+                //TODO impolemnt inline for GPU
+                //ReciprocalGPU_();
+                //return this;
+            }
+            result.Data = data.AsParallel().Select(x => (float) 1/x).ToArray();
+            return result;
+        }
+
         public FloatTensor Rsqrt(bool inline = false)
         {   
             var result = inline ? this : this.emptyTensorCopy();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using OpenMined.Syft.NN;
 
 namespace OpenMined.Syft.Tensor
 {
@@ -96,6 +97,15 @@ namespace OpenMined.Syft.Tensor
 					    controller.getTensor(creators[0]).Backward(c.Neg().Add((float) 1).Mul(this).Mul(grad), this);
 
 				    }
+				    else if (creation_op.Contains("softmax-"))
+				    {
+
+					    FloatTensor c = this.Copy();
+					    c.autograd = false;
+					    var dim = int.Parse(creation_op.Split('-')[1]);
+					    controller.getTensor(creators[0]).Backward(Functional.SoftmaxGradient(this, grad, dim), this);
+
+				    }
 				    else if (creation_op == "pow_scalar")
 				    {
 
@@ -108,6 +118,7 @@ namespace OpenMined.Syft.Tensor
                     {
                         FloatTensor c = this.Copy();
                         c.autograd = false;
+<<<<<<< HEAD
 
                         foreach(var da in c.Data){
                             Console.WriteLine(da);
@@ -115,6 +126,15 @@ namespace OpenMined.Syft.Tensor
 
                         var output = c.Pow(2).Neg().Add(1f).Mul(grad);
 
+=======
+
+                        foreach(var da in c.Data){
+                            Console.WriteLine(da);
+                        }
+
+                        var output = c.Pow(2).Neg().Add(1f).Mul(grad);
+
+>>>>>>> f81a742fa79f0afb9996f8c048defec0e207c62e
                         controller.getTensor(creators[0]).Backward(output, this);
                     }
 			    }

@@ -494,6 +494,16 @@ void Reduce1DSum (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThre
     }
 }
 
+#pragma kernel Reciprocal
+
+RWStructuredBuffer<float> ReciprocalData;
+RWStructuredBuffer<float> ReciprocalResult;
+
+[numthreads(4,1,1)]
+void Reciprocal (uint3 id: SV_DispatchThreadID) {
+	ReciprocalResult[id.x] = 1 / ReciprocalData[id.x];
+}
+
 #pragma kernel RemainderElem_
 
 RWStructuredBuffer<float> RemainderElemDataA_;
