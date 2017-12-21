@@ -6,139 +6,125 @@ namespace OpenMined.Syft.Tensor
 {
     public partial class FloatTensor
     {
-	    private bool autograd;
-	    public FloatTensor Grad { get; private set; }
-	    private bool keepgrads;
-	    
-	    public void Backward(FloatTensor grad = null, FloatTensor grad_origin = null)
-	    {
+        private bool autograd;
+        public FloatTensor Grad { get; private set; }
+        private bool keepgrads;
 
-		    if (autograd)
-		    {
-			    if (grad == null)
-			    {
-				    grad = this.controller.createOnesTensorLike(this);
-				    grad.Autograd = false;
-			    }
+        public void Backward(FloatTensor grad = null, FloatTensor grad_origin = null)
+        {
 
-			    if (grad_origin != null)
-			    {
-				    int child_index = children_indices.IndexOf(grad_origin.Id);
-				    if (children_counts[child_index] > 0)
-				    {
-					    throw new InvalidOperationException("Can't backprop more than once.");
-				    }
-				    else
-				    {
-					    children_counts[child_index] += 1;
-				    }
-			    }
+            if (autograd)
+            {
+                if (grad == null)
+                {
+                    grad = this.controller.createOnesTensorLike(this);
+                    grad.Autograd = false;
+                }
 
-			    if (this.Grad == null)
-			    {
-				    this.Grad = grad;
-			    }
-			    else
-			    {
-				    this.Grad.Add(grad, true);
-			    }
+                if (grad_origin != null)
+                {
+                    int child_index = children_indices.IndexOf(grad_origin.Id);
+                    if (children_counts[child_index] > 0)
+                    {
+                        throw new InvalidOperationException("Can't backprop more than once.");
+                    }
+                    else
+                    {
+                        children_counts[child_index] += 1;
+                    }
+                }
 
-			    // grads must not have grads of their own
-			    if (this.Grad.autograd == true)
-			    {
-				    throw new InvalidOperationException("Sorry, grads cannot have grads");
-			    }
+                if (this.Grad == null)
+                {
+                    this.Grad = grad;
+                }
+                else
+                {
+                    this.Grad.Add(grad, true);
+                }
 
-			    // only continue backpropping if there's something to backprop into
-			    // only continue backpropping if all gradients (from children) are accounted for
-			    // override waiting for children if "backprop" was called on this variable directly
-			    if (this.creators != null && this.creators.Count > 0 && (grad_origin == null || AllChildrenGradsAccountedFor()))
-			    {
-				    if (creation_op == "add_elem")
-				    {
+                // grads must not have grads of their own
+                if (this.Grad.autograd == true)
+                {
+                    throw new InvalidOperationException("Sorry, grads cannot have grads");
+                }
 
-					    controller.getTensor(creators[0]).Backward(grad, this);
-					    controller.getTensor(creators[1]).Backward(grad, this);
+                // only continue backpropping if there's something to backprop into
+                // only continue backpropping if all gradients (from children) are accounted for
+                // override waiting for children if "backprop" was called on this variable directly
+                if (this.creators != null && this.creators.Count > 0 && (grad_origin == null || AllChildrenGradsAccountedFor()))
+                {
+                    if (creation_op == "add_elem")
+                    {
 
-				    }
-				    else if (creation_op == "mul_elem")
-				    {
+                        controller.getTensor(creators[0]).Backward(grad, this);
+                        controller.getTensor(creators[1]).Backward(grad, this);
 
-					    controller.getTensor(creators[0]).Backward(grad.Mul(creators[1]), this);
-					    controller.getTensor(creators[1]).Backward(grad.Mul(creators[0]), this);
+                    }
+                    else if (creation_op == "mul_elem")
+                    {
 
-				    }
-				    else if (creation_op == "div_elem")
-				    {
+                        controller.getTensor(creators[0]).Backward(grad.Mul(creators[1]), this);
+                        controller.getTensor(creators[1]).Backward(grad.Mul(creators[0]), this);
 
-					    controller.getTensor(creators[0]).Backward(grad.Div(creators[1]), this);
-					    controller.getTensor(creators[1]).Backward(grad.Div(creators[0]), this);
+                    }
+                    else if (creation_op == "div_elem")
+                    {
 
-				    }
-				    else if (creation_op == "sub_elem")
-				    {
+                        controller.getTensor(creators[0]).Backward(grad.Div(creators[1]), this);
+                        controller.getTensor(creators[1]).Backward(grad.Div(creators[0]), this);
 
-					    controller.getTensor(creators[0]).Backward(grad, this);
-					    controller.getTensor(creators[1]).Backward(grad.Neg(), this);
+                    }
+                    else if (creation_op == "sub_elem")
+                    {
 
-				    }
-				    else if (creation_op == "mm")
-				    {
+                        controller.getTensor(creators[0]).Backward(grad, this);
+                        controller.getTensor(creators[1]).Backward(grad.Neg(), this);
 
-					    controller.getTensor(creators[0]).Backward(grad.MM(controller.getTensor(creators[1]).Transpose()), this);
-					    controller.getTensor(creators[1]).Backward(controller.getTensor(creators[0]).Transpose().MM(grad), this);
+                    }
+                    else if (creation_op == "mm")
+                    {
 
-				    }
-				    else if (creation_op == "sigmoid")
-				    {
+                        controller.getTensor(creators[0]).Backward(grad.MM(controller.getTensor(creators[1]).Transpose()), this);
+                        controller.getTensor(creators[1]).Backward(controller.getTensor(creators[0]).Transpose().MM(grad), this);
 
-					    FloatTensor c = this.Copy();
-					    c.autograd = false;
-					    controller.getTensor(creators[0]).Backward(c.Neg().Add((float) 1).Mul(this).Mul(grad), this);
+                    }
+                    else if (creation_op == "sigmoid")
+                    {
 
-				    }
-				    else if (creation_op.Contains("softmax-"))
-				    {
+                        FloatTensor c = this.Copy();
+                        c.autograd = false;
+                        controller.getTensor(creators[0]).Backward(c.Neg().Add((float)1).Mul(this).Mul(grad), this);
 
-					    FloatTensor c = this.Copy();
-					    c.autograd = false;
-					    var dim = int.Parse(creation_op.Split('-')[1]);
-					    controller.getTensor(creators[0]).Backward(Functional.SoftmaxGradient(this, grad, dim), this);
+                    }
+                    else if (creation_op.Contains("softmax-"))
+                    {
 
-				    }
-				    else if (creation_op == "pow_scalar")
-				    {
+                        FloatTensor c = this.Copy();
+                        c.autograd = false;
+                        var dim = int.Parse(creation_op.Split('-')[1]);
+                        controller.getTensor(creators[0]).Backward(Functional.SoftmaxGradient(this, grad, dim), this);
 
-					    FloatTensor self_nograd = controller.getTensor(creators[0]).Copy();
-					    self_nograd.autograd = false;
-					    controller.getTensor(creators[0]).Backward(self_nograd.Mul(grad).Mul(controller.getTensor(creators[1]).Data[0]), this);
+                    }
+                    else if (creation_op == "pow_scalar")
+                    {
 
-				    }
+                        FloatTensor self_nograd = controller.getTensor(creators[0]).Copy();
+                        self_nograd.autograd = false;
+                        controller.getTensor(creators[0]).Backward(self_nograd.Mul(grad).Mul(controller.getTensor(creators[1]).Data[0]), this);
+
+                    }
                     else if (creation_op == "tanh")
                     {
                         FloatTensor c = this.Copy();
                         c.autograd = false;
-<<<<<<< HEAD
-
-                        foreach(var da in c.Data){
-                            Console.WriteLine(da);
-                        }
 
                         var output = c.Pow(2).Neg().Add(1f).Mul(grad);
 
-=======
-
-                        foreach(var da in c.Data){
-                            Console.WriteLine(da);
-                        }
-
-                        var output = c.Pow(2).Neg().Add(1f).Mul(grad);
-
->>>>>>> f81a742fa79f0afb9996f8c048defec0e207c62e
                         controller.getTensor(creators[0]).Backward(output, this);
                     }
-			    }
+                }
             }
-	    }
+        }
     }
 }

@@ -114,7 +114,6 @@ namespace OpenMined.Syft.Layer
                             out_str += models[i].ToString() + ",";
 
                         }
-                        Debug.LogFormat("<color=magenta>Printing models:</color> {0}", out_str);
                         return out_str;
 
                     }
