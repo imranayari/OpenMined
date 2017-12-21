@@ -153,14 +153,19 @@ namespace OpenMined.Network.Controllers
 								Sequential model = new Sequential(this);
 								return model.Id.ToString();
 							}
-
+                            else if (model_type == "tanh")
+                            {
+                                Debug.LogFormat("<color=magenta>createModel:</color> {0}", model_type);
+                                Tanh model = new Tanh(this);
+                                return model.Id.ToString();
+                            }
 						}
 						else
 						{
 							Model model = this.getModel(msgObj.objectIndex);
 							return model.ProcessMessage(msgObj, this);
 						}
-						return "hello";
+                        return "Unity Error: SyftController.processMessage: Command not found:" + msgObj.objectType + ":" + msgObj.functionCall;
 					}
 					case "controller":
 					{

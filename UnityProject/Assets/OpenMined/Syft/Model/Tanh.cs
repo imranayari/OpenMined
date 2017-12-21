@@ -1,14 +1,15 @@
-﻿using OpenMined.Network.Controllers;
+using System;
+using OpenMined.Network.Controllers;
 using OpenMined.Syft.Tensor;
 
 namespace OpenMined.Syft.Layer
 {
-    public class Sigmoid : Model
+    public class Tanh : Model
     {
 
-        public Sigmoid(SyftController controller)
+        public Tanh(SyftController controller)
         {
-            init("sigmoid");
+            init("tanh");
 
 #pragma warning disable 420
             id = System.Threading.Interlocked.Increment(ref nCreated);
@@ -17,8 +18,7 @@ namespace OpenMined.Syft.Layer
 
         public override FloatTensor Forward(FloatTensor input)
         {
-
-            FloatTensor output = input.Sigmoid();
+            FloatTensor output = input.Tanh();
             activation = output.Id;
 
             return output;
