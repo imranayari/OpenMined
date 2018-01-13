@@ -10,7 +10,6 @@
 .ipynb_checkpoints
 
 # Unity3D
-**/[Ll]ibrary/
 **/[Tt]emp/
 **/[Oo]bj/
 **/[Bb]uild/
